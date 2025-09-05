@@ -12,7 +12,8 @@ androidx-material = "1.11.0"
 androidx-test-junit = "1.1.5"
 compose = "1.9.0"
 compose-material3= "1.5.0-alpha03"
-compose-plugin = "1.5.12"
+compose-plugin = "1.6.10"
+compose-compiler = "1.5.14"
 junit = "4.13.2"
 kotlin = "1.9.22"
 kotlinx-coroutines = "1.7.3"
@@ -78,6 +79,7 @@ mockk-common = { module = "io.mockk:mockk-common", version.ref = "mockk" }
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
 jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }
+composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
