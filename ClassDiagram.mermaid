@@ -1,0 +1,749 @@
+classDiagram
+%% External Integrations
+    class EcoCashService {
+        <<external>>
+        +processPayment(phoneNumber: String, amount: Double): PaymentResult
+        +checkBalance(phoneNumber: String): BalanceResult
+        +getTransactionStatus(transactionId: String): TransactionStatus
+    }
+
+    class SmsService {
+        <<external>>
+        +sendOtp(phoneNumber: String, code: String): Boolean
+        +sendNotification(phoneNumber: String, message: String): Boolean
+        +sendNextOfKinNotification(phoneNumber: String, userName: String, type: NotificationType): Boolean
+    }
+
+    class FileStorageService {
+        <<external>>
+        +uploadFile(file: ByteArray, fileName: String, type: FileType): String
+        +downloadFile(url: String): ByteArray
+        +deleteFile(url: String): Boolean
+        +generatePresignedUrl(fileName: String): String
+    }
+
+%% Network Layer - Shared
+    class ApiClient {
+        -httpClient: HttpClient
+        -baseUrl: String
+        -authToken: String?
+        +get(endpoint: String, headers: Map~String, String~): ApiResponse
+        +post(endpoint: String, body: Any, headers: Map~String, String~): ApiResponse
+        +put(endpoint: String, body: Any, headers: Map~String, String~): ApiResponse
+        +delete(endpoint: String, headers: Map~String, String~): ApiResponse
+        +upload(endpoint: String, file: ByteArray, fileName: String): ApiResponse
+        -addAuthHeaders(headers: Map~String, String~): Map~String, String~
+        -handleResponse(response: HttpResponse): ApiResponse
+    }
+
+    class NetworkManager {
+        -apiClient: ApiClient
+        -connectivityObserver: ConnectivityObserver
+        +isNetworkAvailable(): Boolean
+        +observeConnectivity(): Flow~NetworkStatus~
+        +retryRequest(request: () -> ApiResponse, maxRetries: Int): ApiResponse
+        +handleNetworkError(error: Throwable): NetworkError
+    }
+
+    class ApiResponse {
+        +success: Boolean
+        +data: Any?
+        +error: ApiError?
+        +statusCode: Int
+        +headers: Map~String, String~
+    }
+
+    class ApiError {
+        +code: String
+        +message: String
+        +details: Map~String, Any~?
+    }
+
+    class NetworkStatus {
+        <<enumeration>>
+        AVAILABLE
+        UNAVAILABLE
+        LOSING
+        LOST
+    }
+
+%% API Services - Shared
+    class AuthApiService {
+        -apiClient: ApiClient
+        +sendOtp(phoneNumber: String): ApiResponse
+        +verifyOtp(otpId: String, otpCode: String, phoneNumber: String): ApiResponse
+        +setPassword(tempToken: String, password: String, confirmPassword: String): ApiResponse
+        +login(phoneNumber: String, password: String): ApiResponse
+        +refreshToken(refreshToken: String): ApiResponse
+        +logout(): ApiResponse
+    }
+
+    class ProfileApiService {
+        -apiClient: ApiClient
+        +getUserProfile(userId: String): ApiResponse
+        +updatePersonalDetails(personalDetails: PersonalDetails): ApiResponse
+        +updateAddress(address: Address): ApiResponse
+        +uploadProfilePicture(file: ByteArray, userId: String): ApiResponse
+        +uploadDocuments(proofOfResidence: ByteArray?, nationalId: ByteArray?, documentType: String): ApiResponse
+        +getDocuments(): ApiResponse
+        +replaceDocument(documentType: String, document: ByteArray): ApiResponse
+        +getNextOfKin(): ApiResponse
+        +updateNextOfKin(nextOfKin: NextOfKin): ApiResponse
+        +replaceNextOfKinDocuments(proofOfResidence: ByteArray?, nationalId: ByteArray?): ApiResponse
+        +getClientTypes(): ApiResponse
+        +updateClientType(clientType: String): ApiResponse
+    }
+
+    class LoanApiService {
+        -apiClient: ApiClient
+        +getCashLoanFormData(): ApiResponse
+        +calculateCashLoanTerms(request: CashLoanCalculationRequest): ApiResponse
+        +submitCashLoanApplication(application: CashLoanApplication): ApiResponse
+        +getPayGoCategories(): ApiResponse
+        +getCategoryProducts(categoryId: String): ApiResponse
+        +calculatePayGoTerms(request: PayGoCalculationRequest): ApiResponse
+        +submitPayGoApplication(application: PayGoLoanApplication): ApiResponse
+        +getLoanHistory(filter: String, page: Int, limit: Int): ApiResponse
+        +getLoanDetails(loanId: String): ApiResponse
+        +getCurrentLoans(): ApiResponse
+        +getLoanAgreement(loanId: String): ApiResponse
+    }
+
+    class PaymentApiService {
+        -apiClient: ApiClient
+        +getPaymentDashboard(): ApiResponse
+        +getPaymentHistory(page: Int, limit: Int): ApiResponse
+        +getPaymentMethods(): ApiResponse
+        +processPayment(request: PaymentRequest): ApiResponse
+        +downloadReceipt(receiptNumber: String): ByteArray
+        +getPaymentStatus(paymentId: String): ApiResponse
+    }
+
+    class NotificationApiService {
+        -apiClient: ApiClient
+        +getAllNotifications(page: Int, limit: Int, filter: String): ApiResponse
+        +markNotificationAsRead(notificationId: String): ApiResponse
+        +markAllNotificationsAsRead(): ApiResponse
+        +getUnreadNotificationCount(): ApiResponse
+        +deleteNotification(notificationId: String): ApiResponse
+    }
+
+%% Data Models - Shared
+    class User {
+        +id: String
+        +phoneNumber: String
+        +passwordHash: String
+        +profilePicture: ProfilePicture?
+        +personalDetails: PersonalDetails?
+        +address: Address?
+        +documents: Documents?
+        +nextOfKin: NextOfKin?
+        +clientType: ClientType
+        +accountStatus: AccountStatus
+        +canApplyForLoan: Boolean
+        +verificationStatus: VerificationStatus
+        +createdAt: Long
+        +updatedAt: Long
+        +isProfileComplete(): Boolean
+        +canMakeLoanApplication(): Boolean
+        +getFullName(): String
+    }
+
+    class PersonalDetails {
+        +firstName: String
+        +lastName: String
+        +dateOfBirth: Long
+        +gender: String
+        +nationality: String
+        +occupation: String
+        +monthlyIncome: Double
+        +lastUpdated: Long
+        +getAge(): Int
+        +getFullName(): String
+        +isComplete(): Boolean
+    }
+
+    class Address {
+        +streetAddress: String
+        +suburb: String
+        +city: String
+        +province: String
+        +postalCode: String
+        +residenceType: String
+        +lastUpdated: Long
+        +getFullAddress(): String
+        +isComplete(): Boolean
+    }
+
+    class ProfilePicture {
+        +url: String
+        +uploadDate: Long
+        +lastUpdated: Long
+        +fileName: String?
+        +fileSize: String?
+        +isValid(): Boolean
+    }
+
+    class Documents {
+        +proofOfResidence: Document?
+        +nationalId: Document?
+        +getAllDocuments(): List~Document~
+        +isAllDocumentsUploaded(): Boolean
+        +hasVerifiedDocuments(): Boolean
+    }
+
+    class Document {
+        +id: String
+        +url: String
+        +fileName: String
+        +fileSize: String
+        +uploadDate: Long
+        +lastUpdated: Long
+        +verificationStatus: VerificationStatus
+        +verificationDate: Long?
+        +verificationNotes: String?
+        +documentType: DocumentType
+        +isVerified(): Boolean
+        +isExpired(): Boolean
+    }
+
+    class NextOfKin {
+        +id: String
+        +userId: String
+        +fullName: String
+        +relationship: String
+        +phoneNumber: String
+        +address: Address
+        +documents: Documents?
+        +createdAt: Long
+        +updatedAt: Long
+        +isComplete(): Boolean
+    }
+
+    class ClientType {
+        +current: String
+        +pending: String?
+        +approvalStatus: ApprovalStatus
+        +lastChanged: Long
+        +requiresAdminApproval: Boolean
+        +isPendingApproval(): Boolean
+        +canChangeType(): Boolean
+    }
+
+%% Loan Data Models - Shared
+    class CashLoanApplication {
+        +id: String
+        +userId: String
+        +applicationId: String
+        +loanType: LoanType
+        +loanAmount: Double
+        +repaymentPeriod: String
+        +loanPurpose: String
+        +employerIndustry: String
+        +collateralValue: Double
+        +collateralDetails: String
+        +calculatedTerms: CashLoanTerms?
+        +status: ApplicationStatus
+        +submittedAt: Long
+        +reviewStartedAt: Long?
+        +reviewCompletedAt: Long?
+        +acceptedTerms: Boolean
+        +isEditable(): Boolean
+        +canBeWithdrawn(): Boolean
+        +getStatusText(): String
+    }
+
+    class PayGoLoanApplication {
+        +id: String
+        +userId: String
+        +applicationId: String
+        +loanType: LoanType
+        +productId: String
+        +productDetails: PayGoProduct
+        +usagePerDay: String
+        +repaymentPeriod: String
+        +salaryBand: String
+        +guarantor: Guarantor
+        +calculatedTerms: PayGoLoanTerms?
+        +status: ApplicationStatus
+        +submittedAt: Long
+        +reviewStartedAt: Long?
+        +reviewCompletedAt: Long?
+        +acceptedTerms: Boolean
+        +isEditable(): Boolean
+        +canBeWithdrawn(): Boolean
+        +getStatusText(): String
+    }
+
+    class CashLoanTerms {
+        +monthlyPayment: Double
+        +interestRate: Double
+        +totalAmount: Double
+        +processingFee: Double
+        +firstPaymentDate: Long
+        +finalPaymentDate: Long
+        +getTotalInterest(): Double
+        +getTotalCost(): Double
+    }
+
+    class PayGoLoanTerms {
+        +weeklyPayment: Double
+        +monthlyPayment: Double
+        +totalLoanAmount: Double
+        +interestRate: Double
+        +installationFee: Double
+        +getTotalInterest(): Double
+        +getTotalCost(): Double
+    }
+
+    class PayGoProduct {
+        +id: String
+        +name: String
+        +category: String
+        +price: Double
+        +description: String
+        +specifications: String
+        +image: String?
+        +installationFee: Double
+        +isAvailable: Boolean
+        +getTotalCost(): Double
+    }
+
+    class Guarantor {
+        +id: String
+        +applicationId: String
+        +name: String
+        +mobileNumber: String
+        +nationalId: String
+        +occupationClass: String
+        +monthlyIncome: Double
+        +relationshipToClient: String
+        +address: Address
+        +verificationStatus: VerificationStatus
+        +createdAt: Long
+        +isVerified(): Boolean
+        +isComplete(): Boolean
+    }
+
+    class Loan {
+        +id: String
+        +userId: String
+        +applicationId: String
+        +loanType: LoanType
+        +originalAmount: Double
+        +totalAmount: Double
+        +remainingBalance: Double
+        +interestRate: Double
+        +repaymentPeriod: String
+        +disbursementDate: Long
+        +maturityDate: Long
+        +status: LoanStatus
+        +nextPaymentDate: Long?
+        +nextPaymentAmount: Double?
+        +paymentsCompleted: Int
+        +totalPayments: Int
+        +productName: String?
+        +loanPurpose: String?
+        +installationDate: Long?
+        +rejectionReason: String?
+        +rejectionDate: Long?
+        +isActive(): Boolean
+        +isOverdue(): Boolean
+        +getProgressPercentage(): Double
+        +getDaysUntilDue(): Int
+        +getDaysOverdue(): Int
+    }
+
+%% Payment Data Models - Shared
+    class Payment {
+        +id: String
+        +userId: String
+        +loanId: String
+        +paymentId: String
+        +amount: Double
+        +method: String
+        +phoneNumber: String
+        +receiptNumber: String
+        +status: PaymentStatus
+        +processedAt: Long
+        +failureReason: String?
+        +createdAt: Long
+        +principal: Double?
+        +interest: Double?
+        +penalties: Double?
+        +isSuccessful(): Boolean
+        +isFailed(): Boolean
+        +isPending(): Boolean
+        +getStatusText(): String
+    }
+
+    class PaymentRequest {
+        +loanId: String
+        +amount: Double
+        +paymentMethod: String
+        +phoneNumber: String
+        +customerReference: String?
+        +validate(): ValidationResult
+    }
+
+    class PaymentSummary {
+        +loanId: String
+        +loanType: LoanType
+        +productName: String?
+        +amountDue: Double
+        +dueDate: Long
+        +status: PaymentStatus
+        +daysUntilDue: Int
+        +daysOverdue: Int
+        +penalties: Double
+        +isOverdue(): Boolean
+        +isCurrent(): Boolean
+        +getStatusText(): String
+    }
+
+    class PaymentSchedule {
+        +paymentNumber: Int
+        +dueDate: Long
+        +amount: Double
+        +principal: Double
+        +interest: Double
+        +status: PaymentStatus
+        +paidDate: Long?
+        +receiptNumber: String?
+        +penalties: Double?
+        +isPaid(): Boolean
+        +isUpcoming(): Boolean
+        +isOverdue(): Boolean
+    }
+
+%% Notification Data Models - Shared
+    class Notification {
+        +id: String
+        +userId: String
+        +type: NotificationType
+        +title: String
+        +message: String
+        +isRead: Boolean
+        +priority: Priority
+        +actionRequired: Boolean
+        +actionType: String?
+        +relatedEntity: RelatedEntity?
+        +createdAt: Long
+        +readAt: Long?
+        +expiresAt: Long?
+        +markAsRead(): Unit
+        +isExpired(): Boolean
+        +requiresAction(): Boolean
+        +getTimeAgo(): String
+    }
+
+    class RelatedEntity {
+        +type: String
+        +id: String
+        +additionalData: Map~String, Any~?
+        +getDisplayName(): String
+    }
+
+%% Authentication Data Models - Shared
+    class OtpSession {
+        +id: String
+        +phoneNumber: String
+        +otpCode: String
+        +expiresAt: Long
+        +isUsed: Boolean
+        +attempts: Int
+        +maxAttempts: Int
+        +createdAt: Long
+        +isExpired(): Boolean
+        +canRetry(): Boolean
+        +incrementAttempts(): Unit
+        +getRemainingTime(): Long
+    }
+
+    class AuthToken {
+        +accessToken: String
+        +refreshToken: String
+        +tokenType: String
+        +expiresIn: Long
+        +scope: String?
+        +userId: String
+        +createdAt: Long
+        +isExpired(): Boolean
+        +needsRefresh(): Boolean
+        +getRemainingTime(): Long
+    }
+
+%% Business Logic - Shared (Use Cases/Repositories)
+    class AuthRepository {
+        -authApiService: AuthApiService
+        -tokenStorage: TokenStorage
+        -smsService: SmsService
+        +sendOtp(phoneNumber: String): Result~OtpSession~
+        +verifyOtp(otpSession: OtpSession, enteredCode: String): Result~String~
+        +setPassword(tempToken: String, password: String): Result~AuthToken~
+        +login(phoneNumber: String, password: String): Result~AuthToken~
+        +refreshToken(): Result~AuthToken~
+        +logout(): Result~Unit~
+        +isLoggedIn(): Boolean
+        +getCurrentUser(): User?
+        -validatePhoneNumber(phoneNumber: String): Boolean
+        -validatePassword(password: String): Boolean
+    }
+
+    class ProfileRepository {
+        -profileApiService: ProfileApiService
+        -fileStorageService: FileStorageService
+        -smsService: SmsService
+        +getUserProfile(): Result~User~
+        +updatePersonalDetails(personalDetails: PersonalDetails): Result~Unit~
+        +updateAddress(address: Address): Result~Unit~
+        +uploadProfilePicture(imageBytes: ByteArray): Result~String~
+        +uploadDocuments(documents: Map~DocumentType, ByteArray~): Result~Unit~
+        +replaceDocument(documentType: DocumentType, document: ByteArray): Result~Unit~
+        +getDocuments(): Result~Documents~
+        +updateNextOfKin(nextOfKin: NextOfKin): Result~Unit~
+        +getNextOfKin(): Result~NextOfKin~
+        +getAvailableClientTypes(): Result~List~String~~
+        +requestClientTypeChange(newType: String): Result~Unit~
+        +syncProfile(): Result~Unit~
+        -validateDocumentSize(document: ByteArray): Boolean
+        -validateDocumentType(fileName: String): Boolean
+    }
+
+    class LoanRepository {
+        -loanApiService: LoanApiService
+        +getCashLoanFormData(): Result~CashLoanFormData~
+        +calculateCashLoanTerms(request: CashLoanCalculationRequest): Result~CashLoanTerms~
+        +submitCashLoanApplication(application: CashLoanApplication): Result~String~
+        +getPayGoCategories(): Result~List~String~~
+        +getCategoryProducts(categoryId: String): Result~List~PayGoProduct~~
+        +calculatePayGoTerms(request: PayGoCalculationRequest): Result~PayGoLoanTerms~
+        +submitPayGoApplication(application: PayGoLoanApplication): Result~String~
+        +getLoanHistory(filter: String, page: Int): Result~LoanHistoryResponse~
+        +getLoanDetails(loanId: String): Result~LoanDetails~
+        +getCurrentLoans(): Result~List~Loan~~
+        +downloadLoanAgreement(loanId: String): Result~ByteArray~
+        +observeLoanUpdates(): Flow~List~Loan~~
+        -validateLoanApplication(application: CashLoanApplication): ValidationResult
+        -validatePayGoApplication(application: PayGoLoanApplication): ValidationResult
+    }
+
+    class PaymentRepository {
+        -paymentApiService: PaymentApiService
+        -ecoCashService: EcoCashService
+        +getPaymentDashboard(): Result~PaymentDashboard~
+        +getPaymentHistory(page: Int): Result~PaymentHistoryResponse~
+        +getPaymentMethods(): Result~List~PaymentMethod~~
+        +processPayment(request: PaymentRequest): Result~String~
+        +getPaymentStatus(paymentId: String): Result~PaymentStatus~
+        +downloadReceipt(receiptNumber: String): Result~ByteArray~
+        +observePaymentUpdates(): Flow~List~Payment~~
+        +calculateEarlyPayoff(loanId: String): Result~EarlyPayoffCalculation~
+        -validatePaymentRequest(request: PaymentRequest): ValidationResult
+        -processEcoCashPayment(request: PaymentRequest): Result~String~
+    }
+
+    class NotificationRepository {
+        -notificationApiService: NotificationApiService
+        +getAllNotifications(filter: String, page: Int): Result~NotificationResponse~
+        +markAsRead(notificationId: String): Result~Unit~
+        +markAllAsRead(): Result~Unit~
+        +getUnreadCount(): Result~Int~
+        +observeNotifications(): Flow~List~Notification~~
+        +observeUnreadCount(): Flow~Int~
+        +deleteNotification(notificationId: String): Result~Unit~
+        -syncNotifications(): Result~Unit~
+    }
+
+%% Storage - Shared
+    class TokenStorage {
+        +saveAuthToken(token: AuthToken): Unit
+        +getAuthToken(): AuthToken?
+        +clearAuthToken(): Unit
+        +saveRefreshToken(token: String): Unit
+        +getRefreshToken(): String?
+        +clearAllTokens(): Unit
+    }
+
+    class UserPreferences {
+        +saveUserPreferences(preferences: Map~String, Any~): Unit
+        +getUserPreference(key: String): Any?
+        +clearUserPreferences(): Unit
+        +observePreferences(): Flow~Map~String, Any~~
+        +setBiometricEnabled(enabled: Boolean): Unit
+        +isBiometricEnabled(): Boolean
+        +setNotificationsEnabled(enabled: Boolean): Unit
+        +isNotificationsEnabled(): Boolean
+    }
+
+    class LocalDatabase {
+        +insertUser(user: User): Unit
+        +getUser(userId: String): User?
+        +updateUser(user: User): Unit
+        +insertLoan(loan: Loan): Unit
+        +getLoans(userId: String): List~Loan~
+        +insertPayment(payment: Payment): Unit
+        +getPayments(loanId: String): List~Payment~
+        +insertNotification(notification: Notification): Unit
+        +getNotifications(userId: String): List~Notification~
+        +clearAll(): Unit
+        +syncData(): Unit
+    }
+
+%% Utility Classes - Shared
+    class ValidationResult {
+        +isValid: Boolean
+        +errors: List~String~
+        +warnings: List~String~
+        +hasErrors(): Boolean
+        +hasWarnings(): Boolean
+        +getErrorMessage(): String?
+    }
+
+    class Result~T~ {
+<<sealed class>>
++Success: T
++Error: Throwable
++Loading: Unit
++isSuccess(): Boolean
++isError(): Boolean
++isLoading(): Boolean
++getOrNull(): T?
++getErrorOrNull(): Throwable?
+}
+
+%% Enumerations - Shared
+class AccountStatus {
+<<enumeration>>
+INCOMPLETE
+COMPLETE
+VERIFIED
+    }
+
+class VerificationStatus {
+<<enumeration>>
+UNVERIFIED
+PENDING
+VERIFIED
+REJECTED
+}
+
+class DocumentType {
+<<enumeration>>
+PROOF_OF_RESIDENCE
+NATIONAL_ID
+PROFILE_PICTURE
+    }
+
+class LoanType {
+<<enumeration>>
+CASH
+PAYGO
+}
+
+class ApplicationStatus {
+<<enumeration>>
+DRAFT
+SUBMITTED
+UNDER_REVIEW
+APPROVED
+REJECTED
+CANCELLED
+}
+
+class LoanStatus {
+<<enumeration>>
+PENDING_DISBURSEMENT
+ACTIVE
+COMPLETED
+DEFAULTED
+CANCELLED
+}
+
+class PaymentStatus {
+<<enumeration>>
+PENDING
+PROCESSING
+SUCCESSFUL
+FAILED
+CANCELLED
+OVERDUE
+CURRENT
+}
+
+class NotificationType {
+<<enumeration>>
+PAYMENT_REMINDER
+APPLICATION_STATUS
+DOCUMENT_REQUEST
+SYSTEM_MESSAGE
+LOAN_APPROVED
+LOAN_REJECTED
+PAYMENT_SUCCESSFUL
+PAYMENT_FAILED
+OVERDUE_PAYMENT
+}
+
+class Priority {
+<<enumeration>>
+LOW
+MEDIUM
+HIGH
+URGENT
+}
+
+class ApprovalStatus {
+<<enumeration>>
+PENDING
+APPROVED
+REJECTED
+    }
+
+%% Relationships
+ApiClient --> NetworkManager
+AuthApiService --> ApiClient
+ProfileApiService --> ApiClient
+LoanApiService --> ApiClient
+PaymentApiService --> ApiClient
+NotificationApiService --> ApiClient
+
+AuthRepository --> AuthApiService
+AuthRepository --> TokenStorage
+AuthRepository --> SmsService
+
+ProfileRepository --> ProfileApiService
+ProfileRepository --> FileStorageService
+ProfileRepository --> SmsService
+
+LoanRepository --> LoanApiService
+PaymentRepository --> PaymentApiService
+PaymentRepository --> EcoCashService
+NotificationRepository --> NotificationApiService
+
+User --> PersonalDetails
+User --> Address
+User --> ProfilePicture
+User --> Documents
+User --> NextOfKin
+User --> ClientType
+
+Documents --> Document
+NextOfKin --> Address
+NextOfKin --> Documents
+
+CashLoanApplication --> CashLoanTerms
+PayGoLoanApplication --> PayGoProduct
+PayGoLoanApplication --> PayGoLoanTerms
+PayGoLoanApplication --> Guarantor
+
+Guarantor --> Address
+Loan --> PaymentSchedule
+Payment --> PaymentRequest
+
+Notification --> RelatedEntity
+
+AuthRepository --> LocalDatabase
+ProfileRepository --> LocalDatabase
+LoanRepository --> LocalDatabase
+PaymentRepository --> LocalDatabase
+NotificationRepository --> LocalDatabase

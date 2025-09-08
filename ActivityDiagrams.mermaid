@@ -1,0 +1,298 @@
+graph TD
+%% === USER REGISTRATION & AUTHENTICATION FLOW ===
+    subgraph "1. User Registration & Authentication Flow"
+        A1[User Opens App] --> A2[Gather Device ID<br/>Platform-specific]
+        A2 --> A3[Enter Phone Number]
+        A3 --> A4{Valid ZW Phone<br/>Number Format?}
+        A4 -->|No| A5[Show Validation Error]
+        A5 --> A3
+        A4 -->|Yes| A6[API: Check if User Exists<br/>POST /api/auth/check-user]
+        A6 --> A7{User Already<br/>Exists?}
+        A7 -->|Yes| A8[Show Error:<br/>User exists, redirect to login]
+        A8 --> A9[Login Flow]
+        A7 -->|No| A10[API: Send OTP<br/>POST /api/auth/send-otp<br/>with phone and deviceId]
+        A10 --> A11{OTP Sent<br/>Successfully?}
+        A11 -->|No| A12[SMS Service: Failed]
+        A12 --> A13[Show Error:<br/>Network/SMS Issue]
+        A13 --> A14[Retry Button]
+        A14 --> A10
+        A11 -->|Yes| A15[Save OTP Session<br/>to Local Storage]
+        A15 --> A16[Start 60s Timer]
+        A16 --> A17[User Enters OTP Code]
+        A17 --> A18{Timer<br/>Expired?}
+        A18 -->|Yes| A19[Show Error: OTP Expired]
+        A19 --> A14
+        A18 -->|No| A20[API: Verify OTP<br/>POST /api/auth/verify-otp]
+        A20 --> A21{OTP Valid and<br/>Attempts less than 3?}
+        A21 -->|No| A22[Increment Attempt Count<br/>in Local Storage]
+        A22 --> A23{Max Attempts<br/>Reached?}
+        A23 -->|Yes| A24[Block User<br/>Request New OTP]
+        A24 --> A10
+        A23 -->|No| A25[Show Error: Invalid OTP]
+        A25 --> A17
+        A21 -->|Yes| A26[Save Temp Token<br/>to Local Storage]
+        A26 --> A27[User Sets Password]
+        A27 --> A28{Password Valid<br/>Min 6 chars?}
+        A28 -->|No| A29[Show Validation Error]
+        A29 --> A27
+        A28 -->|Yes| A30[API: Set Password<br/>POST /api/auth/set-password<br/>with tempToken and deviceId]
+        A30 --> A31{Password Set<br/>Successfully?}
+        A31 -->|No| A32[Show Error:<br/>Registration Failed]
+        A32 --> A27
+        A31 -->|Yes| A33[Save Auth Token<br/>to Secure Storage]
+        A33 --> A34[DB: Create User Record<br/>in Local Database]
+        A34 --> A35[Navigate to Profile Setup]
+    end
+
+%% === PROFILE SETUP FLOW ===
+    subgraph "2. Profile Setup Flow"
+        B1[Profile Setup Screen] --> B2[User Chooses Profile Picture]
+        B2 --> B3{Picture<br/>Selected?}
+        B3 -->|Yes| B4[Validate Image<br/>Size less than 5MB, Valid Format]
+        B4 --> B5{Valid Image?}
+        B5 -->|No| B6[Show Error: Invalid Image]
+        B6 --> B2
+        B5 -->|Yes| B7[API: Upload Profile Picture<br/>POST /api/profile/upload-picture]
+        B7 --> B8{Upload<br/>Successful?}
+        B8 -->|No| B9[FileStorage Service: Failed]
+        B9 --> B10[Show Error: Upload Failed]
+        B10 --> B2
+        B8 -->|Yes| B11[Update Local User Record]
+        B3 -->|No| B11
+        B11 --> B12[Fill Personal Details Form]
+        B12 --> B13[User Submits Details]
+        B13 --> B14{All Required<br/>Fields Valid?}
+        B14 -->|No| B15[Show Validation Errors]
+        B15 --> B12
+        B14 -->|Yes| B16[API: Save Personal Details<br/>POST /api/profile/personal-details]
+        B16 --> B17{Save<br/>Successful?}
+        B17 -->|No| B18[Show Error: Save Failed]
+        B18 --> B12
+        B17 -->|Yes| B19[Update Local User Record]
+        B19 --> B20[Fill Address Information]
+        B20 --> B21[User Submits Address]
+        B21 --> B22{Address<br/>Valid?}
+        B22 -->|No| B23[Show Validation Errors]
+        B23 --> B20
+        B22 -->|Yes| B24[API: Save Address<br/>POST /api/profile/address]
+        B24 --> B25{Save<br/>Successful?}
+        B25 -->|No| B26[Show Error: Save Failed]
+        B26 --> B20
+        B25 -->|Yes| B27[Update Local User Record]
+        B27 --> B28[Document Upload Section]
+        B28 --> B29{User Wants to<br/>Upload Documents?}
+        B29 -->|Skip| B30[Mark Account as Incomplete<br/>Limited Access Only]
+        B30 --> B31[Navigate to Dashboard<br/>View Only Mode]
+        B29 -->|Upload| B32[Select Document Type<br/>Proof of Residence or National ID]
+        B32 --> B33[User Selects Document File]
+        B33 --> B34{Valid Document?<br/>PDF or Image, less than 5MB}
+        B34 -->|No| B35[Show Error: Invalid Document]
+        B35 --> B33
+        B34 -->|Yes| B36[API: Upload Documents<br/>POST /api/profile/upload-documents]
+        B36 --> B37{Upload<br/>Successful?}
+        B37 -->|No| B38[FileStorage Service: Failed]
+        B38 --> B39[Show Error: Upload Failed]
+        B39 --> B33
+        B37 -->|Yes| B40[Update Local User Record<br/>Set Verification Status: Pending]
+        B40 --> B41[Next of Kin Registration]
+    end
+
+%% === CASH LOAN APPLICATION FLOW ===
+    subgraph "3. Cash Loan Application Flow"
+        C1[User Selects Cash Loan] --> C2{User Account<br/>Complete and Verified?}
+        C2 -->|No| C3[Show Error: Complete Profile First]
+        C3 --> C4[Navigate to Profile]
+        C2 -->|Yes| C5[API: Get Cash Loan Form Data<br/>GET /api/loans/cash/form-data]
+        C5 --> C6{Data Retrieved<br/>Successfully?}
+        C6 -->|No| C7[Show Error: Data Loading Failed]
+        C7 --> C8[Retry Button]
+        C8 --> C5
+        C6 -->|Yes| C9[Pre-populate Occupation<br/>from User Profile]
+        C9 --> C10[User Fills Loan Details<br/>Amount, Period, Purpose, etc.]
+        C10 --> C11[User Enters Collateral Info]
+        C11 --> C12[User Clicks Apply]
+        C12 --> C13{All Fields<br/>Valid?}
+        C13 -->|No| C14[Show Validation Errors]
+        C14 --> C10
+        C13 -->|Yes| C15[API: Calculate Loan Terms<br/>POST /api/loans/cash/calculate]
+        C15 --> C16{Calculation<br/>Successful?}
+        C16 -->|No| C17[Show Error: Calculation Failed]
+        C17 --> C10
+        C16 -->|Yes| C18[Display Loan Summary<br/>Monthly Payment, Interest, Total]
+        C18 --> C19[User Clicks Accept]
+        C19 --> C20[Show Final Confirmation Dialog]
+        C20 --> C21{User<br/>Confirms?}
+        C21 -->|No| C22[Return to Summary]
+        C22 --> C18
+        C21 -->|Yes| C23[API: Submit Application<br/>POST /api/loans/cash/apply]
+        C23 --> C24{Submission<br/>Successful?}
+        C24 -->|No| C25[Show Error: Submission Failed]
+        C25 --> C26[Save Draft to Local DB]
+        C26 --> C27[Retry Later Option]
+        C24 -->|Yes| C28[Save Application to Local DB<br/>Status: Submitted]
+        C28 --> C29[Show Success Message<br/>Application ID and Review Time]
+        C29 --> C30[Navigate to Credit History]
+    end
+
+%% === PAYMENT PROCESSING FLOW ===
+    subgraph "4. Payment Processing Flow"
+        D1[User Opens Payments] --> D2[API: Get Payment Dashboard<br/>GET /api/payments/dashboard]
+        D2 --> D3{Data Loaded<br/>Successfully?}
+        D3 -->|No| D4[Show Error: Loading Failed]
+        D4 --> D5[Retry Button]
+        D5 --> D2
+        D3 -->|Yes| D6[Display Payment Summary<br/>Due Amounts, Deadlines, Overdue]
+        D6 --> D7[Update Local Database<br/>with Payment Data]
+        D7 --> D8[User Selects Loan to Pay]
+        D8 --> D9[API: Get Payment Methods<br/>GET /api/payments/methods]
+        D9 --> D10{Methods<br/>Available?}
+        D10 -->|No| D11[Show Error: No Payment Methods]
+        D10 -->|Yes| D12[Display Payment Methods<br/>EcoCash]
+        D12 --> D13[User Selects EcoCash]
+        D13 --> D14[Pre-populate Phone Number<br/>from User Profile]
+        D14 --> D15[User Confirms Payment Details]
+        D15 --> D16[User Clicks Make Payment]
+        D16 --> D17{Valid Phone and<br/>Amount?}
+        D17 -->|No| D18[Show Validation Errors]
+        D18 --> D14
+        D17 -->|Yes| D19[API: Process Payment<br/>POST /api/payments/process]
+        D19 --> D20{Payment Request<br/>Accepted?}
+        D20 -->|No| D21[Show Error: Payment Failed]
+        D21 --> D22[Log Error to Local DB]
+        D22 --> D14
+        D20 -->|Yes| D23[EcoCash Service: Process Payment]
+        D23 --> D24[Save Payment Record<br/>Status: Processing]
+        D24 --> D25[Show Processing Message<br/>2-5 minutes]
+        D25 --> D26[Start Payment Status Polling<br/>Every 30 seconds]
+        D26 --> D27[API: Get Payment Status<br/>GET /api/payments/status/paymentId]
+        D27 --> D28{Payment<br/>Successful?}
+        D28 -->|Processing| D29[Continue Polling<br/>Max 10 attempts]
+        D29 --> D27
+        D28 -->|Failed| D30[Update Local DB: Failed]
+        D30 --> D31[Show Error: Payment Failed<br/>with Reason]
+        D31 --> D32[Retry Payment Option]
+        D32 --> D14
+        D28 -->|Success| D33[Update Local DB: Successful]
+        D33 --> D34[API: Download Receipt<br/>GET /api/payments/receipt/receiptNumber]
+        D34 --> D35[Show Success Message<br/>and Receipt Download]
+        D35 --> D36[Refresh Payment Dashboard]
+        D36 --> D2
+    end
+
+%% === PROFILE DOCUMENT MANAGEMENT FLOW ===
+    subgraph "5. Profile Document Management Flow"
+        E1[User Opens Profile] --> E2[API: Get User Profile<br/>GET /api/profile/user/userId]
+        E2 --> E3{Profile Loaded<br/>Successfully?}
+        E3 -->|No| E4[Show Error: Loading Failed]
+        E4 --> E5[Retry Button]
+        E5 --> E2
+        E3 -->|Yes| E6[Display Profile Information<br/>and Verification Status]
+        E6 --> E7[Update Local User Record]
+        E7 --> E8[User Clicks Edit Profile]
+        E8 --> E9{Which Section<br/>to Edit?}
+        E9 -->|Personal Details| E10[Edit Personal Details Form]
+        E9 -->|Address| E11[Edit Address Form]
+        E9 -->|Documents| E12[Document Management Screen]
+        E9 -->|Next of Kin| E13[Edit Next of Kin]
+        E10 --> E14[User Submits Changes]
+        E14 --> E15{Changes<br/>Valid?}
+        E15 -->|No| E16[Show Validation Errors]
+        E16 --> E10
+        E15 -->|Yes| E17[API: Update Personal Details<br/>PUT /api/profile/personal-details]
+        E17 --> E18{Update<br/>Successful?}
+        E18 -->|No| E19[Show Error: Update Failed]
+        E19 --> E10
+        E18 -->|Yes| E20[Update Local User Record<br/>Set Verification: Unverified]
+        E20 --> E21[Show Success and Warning:<br/>Re-verification Required]
+        E21 --> E6
+        E12 --> E22[API: Get Documents<br/>GET /api/profile/documents]
+        E22 --> E23[Display Current Documents<br/>and Verification Status]
+        E23 --> E24[User Clicks Replace Document]
+        E24 --> E25[Select New Document File]
+        E25 --> E26{Valid Document?<br/>PDF or Image, less than 5MB}
+        E26 -->|No| E27[Show Error: Invalid Document]
+        E27 --> E25
+        E26 -->|Yes| E28[API: Replace Document<br/>PUT /api/profile/documents/type]
+        E28 --> E29{Replacement<br/>Successful?}
+        E29 -->|No| E30[FileStorage Service: Failed]
+        E30 --> E31[Show Error: Upload Failed]
+        E31 --> E25
+        E29 -->|Yes| E32[Update Local Document Record<br/>Status: Pending Verification]
+        E32 --> E33[Show Success: Document Replaced<br/>Pending Verification]
+        E33 --> E23
+    end
+
+%% === NOTIFICATION MANAGEMENT FLOW ===
+    subgraph "6. Notification Management Flow"
+        F1[User Opens Notifications] --> F2[API: Get Notifications<br/>GET /api/notifications?filter=all]
+        F2 --> F3{Notifications<br/>Loaded?}
+        F3 -->|No| F4[Show Error: Loading Failed]
+        F4 --> F5[Retry Button]
+        F5 --> F2
+        F3 -->|Yes| F6[Display Notification List<br/>with Read/Unread Status]
+        F6 --> F7[Update Local Notification Cache]
+        F7 --> F8[User Taps Notification]
+        F8 --> F9{Notification<br/>Read?}
+        F9 -->|No| F10[API: Mark as Read<br/>PUT /api/notifications/id/read]
+        F10 --> F11[Update Local Cache]
+        F9 -->|Yes| F11
+        F11 --> F12{Action<br/>Required?}
+        F12 -->|No| F13[Show Notification Details]
+        F13 --> F6
+        F12 -->|Yes| F14{Action<br/>Type?}
+        F14 -->|make_payment| F15[Navigate to Payments]
+        F14 -->|upload_document| F16[Navigate to Profile/Documents]
+        F14 -->|view_application| F17[Navigate to Credit History]
+        F15 --> D1
+        F16 --> E12
+        F17 --> G1
+        F6 --> F18[User Clicks Mark All Read]
+        F18 --> F19[API: Mark All as Read<br/>PUT /api/notifications/mark-all-read]
+        F19 --> F20{Request<br/>Successful?}
+        F20 -->|No| F21[Show Error: Action Failed]
+        F21 --> F6
+        F20 -->|Yes| F22[Update All Local Notifications<br/>Set Read: True]
+        F22 --> F23[Refresh Notification List]
+        F23 --> F6
+    end
+
+%% === CREDIT HISTORY & LOAN MANAGEMENT FLOW ===
+    subgraph "7. Credit History & Loan Management Flow"
+        G1[User Opens Credit History] --> G2[API: Get Loan History<br/>GET /api/loans/history?filter=all]
+        G2 --> G3{History<br/>Loaded?}
+        G3 -->|No| G4[Show Error: Loading Failed]
+        G4 --> G5[Retry Button]
+        G5 --> G2
+        G3 -->|Yes| G6[Display Loan List<br/>with Filter Options]
+        G6 --> G7[Update Local Loan Cache]
+        G7 --> G8[User Applies Filter<br/>All/Approved/Rejected/Current]
+        G8 --> G9[Filter Local Data<br/>or Make New API Call]
+        G9 --> G6
+        G6 --> G10[User Taps on Loan]
+        G10 --> G11[API: Get Loan Details<br/>GET /api/loans/loanId/details]
+        G11 --> G12{Details<br/>Loaded?}
+        G12 -->|No| G13[Show Error: Loading Failed]
+        G13 --> G14[Retry Button]
+        G14 --> G11
+        G12 -->|Yes| G15[Display Loan Details<br/>Payment Schedule, Balance, etc.]
+        G15 --> G16[Update Local Loan Record]
+        G16 --> G17{Early Payment<br/>Available?}
+        G17 -->|Yes| G18[Show Early Payment Option<br/>with Savings Amount]
+        G18 --> G19[User Clicks Early Payment]
+        G19 --> G20[Navigate to Payment Flow<br/>with Early Payment Amount]
+        G20 --> D14
+        G17 -->|No| G21[User Views Payment Schedule]
+        G21 --> G22[User Clicks View Agreement]
+        G22 --> G23[API: Get Loan Agreement<br/>GET /api/loans/loanId/agreement]
+        G23 --> G24{Agreement<br/>Available?}
+        G24 -->|No| G25[Show Error: Agreement Not Found]
+        G25 --> G15
+        G24 -->|Yes| G26[Display PDF Agreement<br/>in Dedicated Screen]
+        G26 --> G27[User Can Download/Share<br/>Agreement]
+        G27 --> G15
+    end
+
+%% Flow connections between diagrams
+    A35 --> B1
+    B41 --> B1
+    B31 --> F1
