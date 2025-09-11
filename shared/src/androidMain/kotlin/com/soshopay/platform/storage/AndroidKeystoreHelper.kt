@@ -12,6 +12,26 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
+/**
+ * AndroidKeystoreHelper provides secure encryption and decryption utilities using the Android Keystore system.
+ * It manages a symmetric AES key for encrypting sensitive data, such as authentication tokens, and ensures
+ * hardware-backed security when available. The class automatically creates and manages the key lifecycle,
+ * including creation, deletion, and availability checks.
+ *
+ * Features:
+ * - Generates and stores a symmetric AES key in the Android Keystore
+ * - Encrypts and decrypts strings using AES/GCM/NoPadding
+ * - Combines IV and encrypted data for safe storage and transmission
+ * - Supports hardware-backed security modules (StrongBox) on supported devices
+ * - Handles key creation, deletion, and existence checks
+ * - Logs all security-relevant operations for audit and debugging
+ *
+ * Usage:
+ * - Call [encrypt] to securely encrypt a string
+ * - Call [decrypt] to securely decrypt a previously encrypted string
+ * - Use [deleteKey] to remove the key from the Keystore
+ * - Use [isKeyAvailable] to check if the key exists
+ */
 class AndroidKeystoreHelper {
     companion object {
         private const val KEY_ALIAS = "SoshoPaySecretKey"
