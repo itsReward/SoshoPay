@@ -1,27 +1,53 @@
 package com.soshopay.domain.repository
 
-import com.soshopay.domain.model.User
+import com.soshopay.domain.model.*
+import com.soshopay.domain.util.Result
 
 interface AuthRepository {
-    suspend fun sendOtp(phoneNumber: String): Result<OtpResponse>
-    suspend fun verifyOtp(otpId: String, otpCode: String): Result<TempToken>
-    suspend fun setPassword(tempToken: String, password: String): Result<AuthResult>
-    suspend fun getCurrentUser(): Result<User>
+    suspend fun sendOtp(phoneNumber: String): Result<OtpSession>
+
+    suspend fun verifyOtp(
+        otpSession: OtpSession,
+        enteredCode: String,
+    ): Result<String>
+
+    suspend fun setPin(
+        tempToken: String,
+        pin: String,
+        phoneNumber: String,
+    ): Result<AuthToken>
+
+    suspend fun login(
+        phoneNumber: String,
+        pin: String,
+    ): Result<AuthToken>
+
+    suspend fun refreshToken(): Result<AuthToken>
+
     suspend fun logout(): Result<Unit>
+
+    suspend fun isLoggedIn(): Boolean
+
+    suspend fun getCurrentUser(): User?
+
+    suspend fun updatePin(
+        currentPin: String,
+        newPin: String,
+    ): Result<Unit>
+
+    suspend fun createClient(
+        firstName: String,
+        lastName: String,
+        phoneNumber: String,
+        pin: String,
+    ): Result<User>
+
+    suspend fun startMobileChange(newMobile: String): Result<String>
+
+    suspend fun verifyMobileChange(
+        changeToken: String,
+        otp: String,
+    ): Result<String>
+
+    suspend fun confirmMobileChange(changeToken: String): Result<String>
 }
-
-data class OtpResponse(
-    val otpId: String,
-    val expiresIn: Int,
-    val message: String
-)
-
-data class TempToken(
-    val token: String,
-    val expiresAt: Long
-)
-
-data class AuthResult(
-    val user: User,
-    val accessToken: String
-)
