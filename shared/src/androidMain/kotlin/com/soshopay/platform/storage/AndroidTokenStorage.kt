@@ -2,8 +2,6 @@ package com.soshopay.platform.storage
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKeys
 import com.soshopay.domain.model.AuthToken
 import com.soshopay.domain.storage.TokenStorage
 import com.soshopay.domain.util.Logger
@@ -15,23 +13,19 @@ import kotlinx.serialization.json.Json
 class AndroidTokenStorage(
     private val context: Context,
 ) : TokenStorage {
-    private val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
-
-    private val encryptedSharedPreferences: SharedPreferences by lazy {
-        EncryptedSharedPreferences.create(
+    private val sharedPreferences: SharedPreferences =
+        context.getSharedPreferences(
             "soshopay_secure_prefs",
-            masterKeyAlias,
-            context,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+            Context.MODE_PRIVATE,
         )
-    }
 
     private val json =
         Json {
             ignoreUnknownKeys = true
             encodeDefaults = true
         }
+
+    private val keystoreHelper = AndroidKeystoreHelper()
 
     companion object {
         private const val KEY_AUTH_TOKEN = "auth_token"
@@ -43,9 +37,11 @@ class AndroidTokenStorage(
         withContext(Dispatchers.IO) {
             try {
                 val tokenJson = json.encodeToString(token)
-                encryptedSharedPreferences
+                val encryptedData = keystoreHelper.encrypt(tokenJson)
+
+                sharedPreferences
                     .edit()
-                    .putString(KEY_AUTH_TOKEN, tokenJson)
+                    .putString(KEY_AUTH_TOKEN, encryptedData)
                     .putLong(KEY_TOKEN_CREATED_AT, System.currentTimeMillis())
                     .apply()
 
@@ -60,9 +56,10 @@ class AndroidTokenStorage(
     override suspend fun getAuthToken(): AuthToken? =
         withContext(Dispatchers.IO) {
             try {
-                val tokenJson = encryptedSharedPreferences.getString(KEY_AUTH_TOKEN, null)
-                tokenJson?.let {
-                    json.decodeFromString<AuthToken>(it)
+                val encryptedData = sharedPreferences.getString(KEY_AUTH_TOKEN, null)
+                encryptedData?.let {
+                    val tokenJson = keystoreHelper.decrypt(it)
+                    json.decodeFromString<AuthToken>(tokenJson)
                 }
             } catch (e: Exception) {
                 Logger.e("Failed to retrieve auth token", "TOKEN_STORAGE", e)
@@ -73,7 +70,7 @@ class AndroidTokenStorage(
     override suspend fun clearAuthToken(): Boolean =
         withContext(Dispatchers.IO) {
             try {
-                encryptedSharedPreferences
+                sharedPreferences
                     .edit()
                     .remove(KEY_AUTH_TOKEN)
                     .remove(KEY_TOKEN_CREATED_AT)
@@ -90,9 +87,10 @@ class AndroidTokenStorage(
     override suspend fun saveRefreshToken(token: String): Boolean =
         withContext(Dispatchers.IO) {
             try {
-                encryptedSharedPreferences
+                val encryptedData = keystoreHelper.encrypt(token)
+                sharedPreferences
                     .edit()
-                    .putString(KEY_REFRESH_TOKEN, token)
+                    .putString(KEY_REFRESH_TOKEN, encryptedData)
                     .apply()
 
                 Logger.d("Refresh token saved successfully", "TOKEN_STORAGE")
@@ -106,7 +104,10 @@ class AndroidTokenStorage(
     override suspend fun getRefreshToken(): String? =
         withContext(Dispatchers.IO) {
             try {
-                encryptedSharedPreferences.getString(KEY_REFRESH_TOKEN, null)
+                val encryptedData = sharedPreferences.getString(KEY_REFRESH_TOKEN, null)
+                encryptedData?.let {
+                    keystoreHelper.decrypt(it)
+                }
             } catch (e: Exception) {
                 Logger.e("Failed to retrieve refresh token", "TOKEN_STORAGE", e)
                 null
@@ -116,7 +117,7 @@ class AndroidTokenStorage(
     override suspend fun clearAllTokens(): Boolean =
         withContext(Dispatchers.IO) {
             try {
-                encryptedSharedPreferences
+                sharedPreferences
                     .edit()
                     .remove(KEY_AUTH_TOKEN)
                     .remove(KEY_REFRESH_TOKEN)
@@ -135,7 +136,7 @@ class AndroidTokenStorage(
         withContext(Dispatchers.IO) {
             try {
                 val token = getAuthToken()
-                val createdAt = encryptedSharedPreferences.getLong(KEY_TOKEN_CREATED_AT, 0)
+                val createdAt = sharedPreferences.getLong(KEY_TOKEN_CREATED_AT, 0)
 
                 if (token == null || createdAt == 0L) return@withContext false
 

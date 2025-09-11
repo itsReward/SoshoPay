@@ -2,10 +2,22 @@ package com.soshopay.data.repository
 
 import com.soshopay.data.mapper.ProfileMapper
 import com.soshopay.data.remote.api.ProfileApiService
-import com.soshopay.domain.model.*
+import com.soshopay.domain.model.Address
+import com.soshopay.domain.model.ClientType
+import com.soshopay.domain.model.Document
+import com.soshopay.domain.model.DocumentType
+import com.soshopay.domain.model.Documents
+import com.soshopay.domain.model.NextOfKin
+import com.soshopay.domain.model.PersonalDetails
+import com.soshopay.domain.model.ProfilePicture
+import com.soshopay.domain.model.User
+import com.soshopay.domain.model.VerificationStatus
 import com.soshopay.domain.repository.ProfileRepository
 import com.soshopay.domain.storage.ProfileCache
-import com.soshopay.domain.util.*
+import com.soshopay.domain.util.Logger
+import com.soshopay.domain.util.Result
+import com.soshopay.domain.util.SoshoPayException
+import com.soshopay.domain.util.ValidationUtils
 import kotlinx.coroutines.flow.Flow
 
 class ProfileRepositoryImpl(
@@ -437,17 +449,7 @@ class ProfileRepositoryImpl(
                 // Update cached user
                 val currentUser = profileCache.getCurrentUser()
                 currentUser?.let { user ->
-                    val updatedClientType =
-                        ClientType(
-                            current = user.clientType.current,
-                            pending = newType,
-                            approvalStatus = ApprovalStatus.PENDING,
-                            lastChanged =
-                                kotlinx.datetime.Clock.System
-                                    .now()
-                                    .toEpochMilliseconds(),
-                            requiresAdminApproval = true,
-                        )
+                    val updatedClientType = ClientType.valueOf(newType)
                     val updatedUser = user.copy(clientType = updatedClientType)
                     profileCache.saveUser(updatedUser)
                 }

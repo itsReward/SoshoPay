@@ -2,14 +2,17 @@ package com.soshopay.data.repository
 
 import com.soshopay.data.mapper.AuthMapper
 import com.soshopay.data.remote.api.AuthApiService
-import com.soshopay.domain.model.*
+import com.soshopay.domain.model.AuthToken
+import com.soshopay.domain.model.OtpSession
+import com.soshopay.domain.model.User
 import com.soshopay.domain.repository.AuthRepository
 import com.soshopay.domain.storage.ProfileCache
 import com.soshopay.domain.storage.TokenStorage
 import com.soshopay.domain.storage.UserPreferences
-import com.soshopay.domain.util.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import com.soshopay.domain.util.Logger
+import com.soshopay.domain.util.Result
+import com.soshopay.domain.util.SoshoPayException
+import com.soshopay.domain.util.ValidationUtils
 
 class AuthRepositoryImpl(
     private val authApiService: AuthApiService,
@@ -212,7 +215,7 @@ class AuthRepositoryImpl(
         val tokensCleared = tokenStorage.clearAllTokens()
         val profileCleared = profileCache.clearUser()
 
-        if (tokensCleared && profileCleared) {
+        return if (tokensCleared && profileCleared) {
             Logger.logAuthEvent("LOGOUT_SUCCESS")
             Result.Success(Unit)
         } else {
