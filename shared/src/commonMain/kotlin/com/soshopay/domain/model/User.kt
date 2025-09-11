@@ -11,7 +11,7 @@ data class User(
     val address: Address? = null,
     val documents: Documents? = null,
     val nextOfKin: NextOfKin? = null,
-    val clientType: ClientType = ClientType(),
+    val clientType: ClientType = ClientType.PRIVATE_SECTOR_EMPLOYEE,
     val verificationStatus: VerificationStatus = VerificationStatus.UNVERIFIED,
     val canApplyForLoan: Boolean = false,
     val accountStatus: AccountStatus = AccountStatus.INCOMPLETE,
@@ -35,23 +35,4 @@ data class User(
             canApplyForLoan
 
     fun getFullName(): String = personalDetails?.getFullName() ?: "User"
-}
-
-enum class ClientType {
-    PRIVATE_SECTOR_EMPLOYEE,
-    GOVERNMENT_EMPLOYEE,
-    ENTREPRENEUR,
-}
-
-enum class VerificationStatus {
-    UNVERIFIED,
-    PENDING,
-    VERIFIED,
-    REJECTED,
-}
-
-enum class AccountStatus {
-    INCOMPLETE,
-    COMPLETE,
-    VERIFIED,
 }
