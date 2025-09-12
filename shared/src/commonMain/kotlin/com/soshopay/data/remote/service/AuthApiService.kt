@@ -1,14 +1,37 @@
 package com.soshopay.data.remote.api
 
-import com.soshopay.data.remote.dto.*
+import com.soshopay.data.remote.dto.AuthResponse
+import com.soshopay.data.remote.dto.ConfirmMobileChangeRequest
+import com.soshopay.data.remote.dto.CreateClientRequest
+import com.soshopay.data.remote.dto.CreateClientResponse
+import com.soshopay.data.remote.dto.ErrorResponse
+import com.soshopay.data.remote.dto.LoginRequest
+import com.soshopay.data.remote.dto.MobileChangeConfirmResponse
+import com.soshopay.data.remote.dto.MobileChangeStartResponse
+import com.soshopay.data.remote.dto.MobileChangeVerifyResponse
+import com.soshopay.data.remote.dto.OtpResponse
+import com.soshopay.data.remote.dto.RefreshTokenRequest
+import com.soshopay.data.remote.dto.RefreshTokenResponse
+import com.soshopay.data.remote.dto.SendOtpRequest
+import com.soshopay.data.remote.dto.SetPinRequest
+import com.soshopay.data.remote.dto.SetPinResponse
+import com.soshopay.data.remote.dto.StartMobileChangeRequest
+import com.soshopay.data.remote.dto.TempTokenResponse
+import com.soshopay.data.remote.dto.UpdatePinRequest
+import com.soshopay.data.remote.dto.VerifyMobileChangeRequest
+import com.soshopay.data.remote.dto.VerifyOtpRequest
 import com.soshopay.domain.util.Logger
 import com.soshopay.domain.util.Result
 import com.soshopay.domain.util.SoshoPayException
 import com.soshopay.domain.util.safeCall
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 
 interface AuthApiService {
     suspend fun sendOtp(

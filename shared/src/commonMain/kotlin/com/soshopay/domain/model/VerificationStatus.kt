@@ -13,7 +13,6 @@ enum class VerificationStatus {
             PENDING -> "Pending Verification"
             VERIFIED -> "Verified"
             REJECTED -> "Verification Rejected"
-            else -> "Could not get name"
         }
 
     fun getDescription(): String =
@@ -22,7 +21,6 @@ enum class VerificationStatus {
             PENDING -> "Under review by our verification team"
             VERIFIED -> "Successfully verified and approved"
             REJECTED -> "Verification failed - please check requirements and resubmit"
-            else -> "Could not get description"
         }
 
     fun getColorCode(): String =
@@ -31,7 +29,6 @@ enum class VerificationStatus {
             PENDING -> "#FF9800" // Orange
             VERIFIED -> "#4CAF50" // Green
             REJECTED -> "#F44336" // Red
-            else -> "Could not get color"
         }
 
     fun isActionRequired(): Boolean =
@@ -40,6 +37,5 @@ enum class VerificationStatus {
             PENDING -> false
             VERIFIED -> false
             REJECTED -> true
-            else -> false
         }
 }

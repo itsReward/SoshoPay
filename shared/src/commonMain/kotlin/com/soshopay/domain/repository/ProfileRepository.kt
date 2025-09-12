@@ -1,6 +1,11 @@
 package com.soshopay.domain.repository
 
-import com.soshopay.domain.model.*
+import com.soshopay.domain.model.Address
+import com.soshopay.domain.model.DocumentType
+import com.soshopay.domain.model.Documents
+import com.soshopay.domain.model.NextOfKin
+import com.soshopay.domain.model.PersonalDetails
+import com.soshopay.domain.model.User
 import com.soshopay.domain.util.Result
 import kotlinx.coroutines.flow.Flow
 

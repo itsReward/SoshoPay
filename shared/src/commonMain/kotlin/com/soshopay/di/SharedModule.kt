@@ -1,5 +1,10 @@
 package com.soshopay.di
 
+import com.soshopay.data.local.CacheManager
+import com.soshopay.data.local.LocalLoanStorage
+import com.soshopay.data.local.LocalPaymentStorage
+import com.soshopay.data.remote.LoanApiService
+import com.soshopay.data.remote.PaymentApiService
 import com.soshopay.data.remote.api.AuthApiService
 import com.soshopay.data.remote.api.AuthApiServiceImpl
 import com.soshopay.data.remote.api.FileUploadService
@@ -8,8 +13,12 @@ import com.soshopay.data.remote.api.ProfileApiService
 import com.soshopay.data.remote.api.ProfileApiServiceImpl
 import com.soshopay.data.remote.createHttpClient
 import com.soshopay.data.repository.AuthRepositoryImpl
+import com.soshopay.data.repository.LoanRepositoryImpl
+import com.soshopay.data.repository.PaymentRepositoryImpl
 import com.soshopay.data.repository.ProfileRepositoryImpl
 import com.soshopay.domain.repository.AuthRepository
+import com.soshopay.domain.repository.LoanRepository
+import com.soshopay.domain.repository.PaymentRepository
 import com.soshopay.domain.repository.ProfileRepository
 import com.soshopay.domain.usecase.auth.ChangeMobileNumberUseCase
 import com.soshopay.domain.usecase.auth.CreateClientUseCase
@@ -40,6 +49,8 @@ val sharedModule =
         single<AuthApiService> { AuthApiServiceImpl(get()) }
         single<ProfileApiService> { ProfileApiServiceImpl(get(), get()) }
         single<FileUploadService> { FileUploadServiceImpl(get()) }
+        single<LoanApiService> { LoanApiService(get()) }
+        single<PaymentApiService> { PaymentApiService(get()) }
 
         // Repositories
         single<AuthRepository> {
@@ -55,6 +66,22 @@ val sharedModule =
             ProfileRepositoryImpl(
                 profileApiService = get(),
                 profileCache = get(),
+            )
+        }
+
+        single<LoanRepository> {
+            LoanRepositoryImpl(
+                loanApiService = get(),
+                localStorage = get(),
+                cacheManager = get(),
+            )
+        }
+
+        single<PaymentRepository> {
+            PaymentRepositoryImpl(
+                paymentApiService = get(),
+                localStorage = get(),
+                cacheManager = get(),
             )
         }
 

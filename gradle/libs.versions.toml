@@ -11,12 +11,16 @@ androidx-espresso-core = "3.5.1"
 androidx-material = "1.11.0"
 androidx-test-junit = "1.1.5"
 androidx-security-securityCrypto="1.1.0-alpha06"
+androidx-room-room_runtime = "2.6.1"
+androidx-room-room_ktx="2.6.1"
+androidx-room-room_compiler="2.6.1"
 compose = "1.9.0"
 compose-material3= "1.5.0-alpha03"
 compose-plugin = "1.8.2"
 compose-compiler = "1.5.14"
 junit = "4.13.2"
 kotlin = "2.2.10"
+kspAndroid = "2.2.10-2.0.2"
 kotlinx-coroutines = "1.7.3"
 kotlinx-datetime = "0.5.0"
 kotlinx-serialization = "1.6.2"
@@ -40,6 +44,9 @@ androidx-material = { group = "com.google.android.material", name = "material", 
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "androidx-constraintlayout" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "androidx-security-securityCrypto" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "androidx-room-room_runtime" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "androidx-room-room_ktx" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "androidx-room-room_compiler" }
 compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }
@@ -85,3 +92,4 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kspAndroid = {id = "com.google.devtools.ksp", version.ref = "kspAndroid"}

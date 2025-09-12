@@ -1,6 +1,8 @@
 package com.soshopay.domain.repository
 
-import com.soshopay.domain.model.*
+import com.soshopay.domain.model.AuthToken
+import com.soshopay.domain.model.OtpSession
+import com.soshopay.domain.model.User
 import com.soshopay.domain.util.Result
 
 interface AuthRepository {

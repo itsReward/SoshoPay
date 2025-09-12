@@ -1,8 +1,11 @@
+import com.google.devtools.ksp.gradle.KspExtension
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kspAndroid)
 }
 
 kotlin {
@@ -27,6 +30,9 @@ kotlin {
             implementation(libs.koin.androidx.compose)
             implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.lifecycle.runtime.compose)
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.room.ktx)
+            implementation(libs.kotlinx.serialization.json)
         }
     }
 }
@@ -80,4 +86,9 @@ android {
     dependencies {
         debugImplementation(libs.compose.ui.tooling)
     }
+}
+
+dependencies {
+    ksp(libs.androidx.room.compiler)
+    debugImplementation(libs.compose.ui.tooling)
 }
