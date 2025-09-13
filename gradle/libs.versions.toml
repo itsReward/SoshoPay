@@ -14,10 +14,13 @@ androidx-security-securityCrypto="1.1.0-alpha06"
 androidx-room-room_runtime = "2.8.0"
 androidx-room-room_ktx="2.8.0"
 androidx-room-room_compiler="2.8.0"
+androidx-compose-material = "1.7.8"
+androidx-compose-material-icons = "1.7.7"
 compose = "1.9.0"
 compose-material3= "1.5.0-alpha03"
 compose-plugin = "1.8.2"
 compose-compiler = "1.5.14"
+
 junit = "4.13.2"
 kotlin = "2.2.10"
 kspAndroid = "2.2.10-2.0.2"
@@ -47,6 +50,8 @@ androidx-security-crypto = { module = "androidx.security:security-crypto", versi
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "androidx-room-room_runtime" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "androidx-room-room_ktx" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "androidx-room-room_compiler" }
+androidx-compose-material = { module = "androidx.compose.material:material", version.ref = "androidx-compose-material" }
+compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "androidx-compose-material-icons" }
 compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }

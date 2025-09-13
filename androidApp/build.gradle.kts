@@ -1,4 +1,5 @@
 import com.google.devtools.ksp.gradle.KspExtension
+import org.gradle.kotlin.dsl.implementation
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -33,6 +34,8 @@ kotlin {
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.room.ktx)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.androidx.compose.material)
+            implementation(libs.compose.material.icons.extended)
         }
     }
 }

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="text_gray">#FFFAFAFA</color>
+    <color name="onboard_cash_loans_background">#FF5357B3</color>
+    <color name="onboard_blue_dark_background">#FF0C457F</color>
+    <color name="onboard_blue_darker_background">#FF555F7D</color>
+    <color name="onboard_yellow_background">#FFFDBE31</color>
+    <color name="onboard_yellow_darker_background">#FFEBAC4D</color>
+    <color name="yec_fund_light">#FFFCA600</color>
+    <color name="yec_fund_orange">#FFFE8303</color>
+    <color name="yec_fund_dark_orange">#FFE86E2A</color>
+    <color name="blue_gray">#FF607D8B</color>
+    <color name="dark_blue_gray">#FF455A64</color>
+    <color name="dark_blue">#FF0D47A1</color>
+    <color name="pale_yellow_background">#FFFFF8E1</color>
+    <color name="pale_light_yellow_background">#FFFDFAF3</color>
+    <color name="pale_blue_background">#FFE1EBEE</color>
+    <!--<color name="pale_blue_background">#FFE8EAF6</color>-->
+    <!--<color name="yellow">#FFFBC02D</color>-->
+    <color name="yellow">#FFF9A825</color>
+    <color name="blue">#FF0277BD</color>
+    <color name="alpha_yec_orange">#BFFF9800</color>
+    <color name="alpha_yec_yellow">#BFFEE7B3</color>
+    <color name="text_yec_orange">#BFBF360C</color>
+    <color name="ecocash_blue">#FFD32F2F</color>
+    <color name="ecocash_red">#FFD32F2F</color>
+    <color name="one_money_orange">#FFE86E2A</color>
+
+    <color name="yellow_1">#FFFCE40B</color>
+    <color name="yellow_one">#FFFFC501</color>
+    <color name="yellow_two">#FFFEE202</color>
+    <color name="yellow_three">#FFFF6F00</color>
+
+    <color name="banner_yellow_text">#FFF9AA49</color>
+
+    <color name="sosho_blue">#FF0E264A</color>
+    <color name="blue_one">#FF01579B</color>
+    <color name="blue_two">#FF1F3252</color>
+    <color name="blue_three">#FF172945</color>
+
+    <color name="blue_gray_icon_color">#FF546E7A</color>
+
+    <!--<color name="yellow_background">#FFF8F6EF</color>-->
+    <color name="yellow_background">#FFFDFAF3</color>
+    <!--<color name="text_field_background">#FFEEEEEE</color>-->
+    <color name="text_field_background">#FFf4f0ec</color>
+    <!--<color name="alt_background">#FFdbd7d2</color>-->
+    <color name="alt_background">#FFF6FFED</color>
+
+    <color name="dark_theme_primary">#FF041930</color>
+    <color name="dark_theme_tertiary">#FF062242</color>
+    <color name="light_theme_primary">#FFFDFAF3</color>
+    <color name="light_theme_tertiary">#FFF6FFED</color>
+</resources>
