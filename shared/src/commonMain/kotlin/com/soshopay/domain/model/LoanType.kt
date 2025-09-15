@@ -4,7 +4,9 @@ import com.soshopay.domain.model.DocumentType.NATIONAL_ID
 import com.soshopay.domain.model.DocumentType.PROFILE_PICTURE
 import com.soshopay.domain.model.DocumentType.PROOF_OF_RESIDENCE
 
-// ========== LOAN TYPES ==========
+/*
+Two types of loan, {CASH} representing cash loans and {PAYGO} representing pay as you go loans i.e appliance loans
+* */
 enum class LoanType {
     CASH,
     PAYGO,

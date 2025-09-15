@@ -1,15 +1,23 @@
 package com.soshopay.data.remote.api
 
-import com.soshopay.data.remote.dto.*
+import com.soshopay.data.remote.dto.AddressDto
+import com.soshopay.data.remote.dto.ClientDto
+import com.soshopay.data.remote.dto.DocumentsDto
+import com.soshopay.data.remote.dto.ErrorResponse
+import com.soshopay.data.remote.dto.NextOfKinDto
+import com.soshopay.data.remote.dto.PersonalDetailsDto
 import com.soshopay.domain.util.Logger
 import com.soshopay.domain.util.Result
 import com.soshopay.domain.util.SoshoPayException
 import com.soshopay.domain.util.safeCall
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.client.request.forms.*
-import io.ktor.http.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 
 interface ProfileApiService {
     suspend fun getUserProfile(): Result<ClientDto>
