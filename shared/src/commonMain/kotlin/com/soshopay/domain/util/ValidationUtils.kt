@@ -1,7 +1,16 @@
 package com.soshopay.domain.util
 
+/**
+ * Utility class providing validation functions for Zimbabwe-specific data such as phone numbers,
+ * national IDs, addresses, personal details, PINs, and file uploads.
+ *
+ * Contains nested objects for each validation domain, with helper methods for checking validity,
+ * formatting, and error reporting.
+ */
 object ValidationUtils {
-    // Zimbabwe Phone Number Validation
+    /**
+     * Provides validation and formatting utilities for Zimbabwean phone numbers.
+     */
     object Phone {
         private val validPrefixes =
             listOf(
@@ -14,6 +23,12 @@ object ValidationUtils {
                 "087", // Telecel
             )
 
+        /**
+         * Checks if the given phone number is a valid Zimbabwean mobile number.
+         * Accepts international, local, and direct formats.
+         * @param phone The phone number to validate.
+         * @return True if valid, false otherwise.
+         */
         fun isValidZimbabwePhone(phone: String): Boolean {
             val cleanPhone = phone.replace(Regex("[^0-9]"), "")
 
@@ -35,6 +50,11 @@ object ValidationUtils {
             }
         }
 
+        /**
+         * Normalizes a Zimbabwean phone number to international format (263XXXXXXXXX).
+         * @param phone The phone number to normalize.
+         * @return Normalized phone number as a string.
+         */
         fun normalizeZimbabwePhone(phone: String): String {
             val cleanPhone = phone.replace(Regex("[^0-9]"), "")
 
@@ -46,6 +66,11 @@ object ValidationUtils {
             }
         }
 
+        /**
+         * Formats a Zimbabwean phone number for display (e.g., +263 77 123 4567).
+         * @param phone The phone number to format.
+         * @return Formatted phone number string.
+         */
         fun formatForDisplay(phone: String): String {
             val normalized = normalizeZimbabwePhone(phone)
             return if (normalized.startsWith("263") && normalized.length == 12) {
@@ -55,6 +80,11 @@ object ValidationUtils {
             }
         }
 
+        /**
+         * Returns a validation error message for a phone number, or null if valid.
+         * @param phone The phone number to validate.
+         * @return Error message string or null.
+         */
         fun getValidationError(phone: String): String? {
             if (phone.isBlank()) return "Phone number is required"
             if (!isValidZimbabwePhone(phone)) {
@@ -64,17 +94,29 @@ object ValidationUtils {
         }
     }
 
-    // Zimbabwe National ID Validation
+    /**
+     * Provides validation and formatting utilities for Zimbabwean National IDs.
+     */
     object NationalId {
         // Zimbabwe National ID format: 63-123456-A-12
         private val nationalIdRegex = Regex("^\\d{2}-\\d{6,7}-[A-Z]\\d{2}$")
         private val nationalIdRegexWithoutDashes = Regex("^\\d{2}\\d{6,7}[A-Z]\\d{2}$")
 
+        /**
+         * Checks if the given national ID is valid according to Zimbabwean formats.
+         * @param nationalId The national ID to validate.
+         * @return True if valid, false otherwise.
+         */
         fun isValidZimbabweNationalId(nationalId: String): Boolean {
             val cleanId = nationalId.trim().uppercase()
             return nationalIdRegex.matches(cleanId) || nationalIdRegexWithoutDashes.matches(cleanId)
         }
 
+        /**
+         * Formats a Zimbabwean national ID to standard format (e.g., 63-123456-A12).
+         * @param nationalId The national ID to format.
+         * @return Formatted national ID string.
+         */
         fun formatNationalId(nationalId: String): String {
             val cleanId = nationalId.replace(Regex("[^0-9A-Za-z]"), "").uppercase()
 
@@ -85,6 +127,11 @@ object ValidationUtils {
             }
         }
 
+        /**
+         * Returns a validation error message for a national ID, or null if valid.
+         * @param nationalId The national ID to validate.
+         * @return Error message string or null.
+         */
         fun getValidationError(nationalId: String): String? {
             if (nationalId.isBlank()) return "National ID is required"
             if (!isValidZimbabweNationalId(nationalId)) {
@@ -94,7 +141,9 @@ object ValidationUtils {
         }
     }
 
-    // Zimbabwe Address Validation
+    /**
+     * Provides validation utilities for Zimbabwean addresses, including province and residence type checks.
+     */
     object Address {
         private val zimbabweProvinces =
             listOf(
@@ -119,14 +168,40 @@ object ValidationUtils {
                 "Other",
             )
 
+        /**
+         * Checks if the given province is a valid Zimbabwean province.
+         * @param province The province name to validate.
+         * @return True if valid, false otherwise.
+         */
         fun isValidProvince(province: String): Boolean = zimbabweProvinces.contains(province.trim())
 
+        /**
+         * Checks if the given residence type is valid.
+         * @param type The residence type to validate.
+         * @return True if valid, false otherwise.
+         */
         fun isValidResidenceType(type: String): Boolean = residenceTypes.contains(type.trim())
 
+        /**
+         * Returns the list of Zimbabwean provinces.
+         */
         fun getProvinces(): List<String> = zimbabweProvinces
 
+        /**
+         * Returns the list of valid residence types.
+         */
         fun getResidenceTypes(): List<String> = residenceTypes
 
+        /**
+         * Validates a Zimbabwean address and returns a ValidationResult with errors if any.
+         * @param streetAddress Street address string.
+         * @param suburb Suburb string.
+         * @param city City string.
+         * @param province Province string.
+         * @param postalCode Postal code string.
+         * @param residenceType Residence type string.
+         * @return ValidationResult containing validity and error messages.
+         */
         fun validateAddress(
             streetAddress: String,
             suburb: String,
@@ -163,7 +238,9 @@ object ValidationUtils {
         }
     }
 
-    // Personal Details Validation
+    /**
+     * Provides validation utilities for personal details such as names, age, gender, occupation, and income.
+     */
     object PersonalDetails {
         private val genders = listOf("Male", "Female", "Other")
         private val occupations =
@@ -177,8 +254,18 @@ object ValidationUtils {
                 "Other",
             )
 
+        /**
+         * Checks if the given name is valid (at least 2 characters, letters only).
+         * @param name The name to validate.
+         * @return True if valid, false otherwise.
+         */
         fun isValidName(name: String): Boolean = name.trim().length >= 2 && name.matches(Regex("^[a-zA-Z\\s'-]+$"))
 
+        /**
+         * Checks if the given date of birth corresponds to a valid age (18-100 years).
+         * @param dateOfBirth Date of birth in epoch milliseconds.
+         * @return True if age is valid, false otherwise.
+         */
         fun isValidAge(dateOfBirth: Long): Boolean {
             val currentTime =
                 kotlinx.datetime.Clock.System
@@ -188,14 +275,36 @@ object ValidationUtils {
             return age >= 18 && age <= 100
         }
 
+        /**
+         * Checks if the monthly income is within a reasonable range.
+         * @param income Monthly income value.
+         * @return True if valid, false otherwise.
+         */
         fun isValidMonthlyIncome(income: Double): Boolean {
             return income >= 0 && income <= 1_000_000 // Reasonable upper limit
         }
 
+        /**
+         * Returns the list of valid genders.
+         */
         fun getGenders(): List<String> = genders
 
+        /**
+         * Returns the list of valid occupations.
+         */
         fun getOccupations(): List<String> = occupations
 
+        /**
+         * Validates personal details and returns a ValidationResult with errors if any.
+         * @param firstName First name string.
+         * @param lastName Last name string.
+         * @param dateOfBirth Date of birth in epoch milliseconds.
+         * @param gender Gender string.
+         * @param nationality Nationality string.
+         * @param occupation Occupation string.
+         * @param monthlyIncome Monthly income value.
+         * @return ValidationResult containing validity and error messages.
+         */
         fun validatePersonalDetails(
             firstName: String,
             lastName: String,
@@ -222,10 +331,22 @@ object ValidationUtils {
         }
     }
 
-    // PIN Validation
+    /**
+     * Provides validation utilities for PIN codes.
+     */
     object Pin {
+        /**
+         * Checks if the given PIN is valid (exactly 4 digits).
+         * @param pin The PIN string to validate.
+         * @return True if valid, false otherwise.
+         */
         fun isValidPin(pin: String): Boolean = pin.length == 4 && pin.all { it.isDigit() }
 
+        /**
+         * Returns a validation error message for a PIN, or null if valid.
+         * @param pin The PIN string to validate.
+         * @return Error message string or null.
+         */
         fun getValidationError(pin: String): String? =
             when {
                 pin.isBlank() -> "PIN is required"
@@ -235,24 +356,46 @@ object ValidationUtils {
             }
     }
 
-    // File Validation
+    /**
+     * Provides validation utilities for file uploads, including type and size checks.
+     */
     object File {
         private val allowedImageTypes = listOf("jpg", "jpeg", "png")
         private val allowedDocumentTypes = listOf("pdf") + allowedImageTypes
         private const val MAX_FILE_SIZE = 5 * 1024 * 1024L // 5MB
 
+        /**
+         * Checks if the file size is within the allowed limit (5MB).
+         * @param sizeBytes File size in bytes.
+         * @return True if valid, false otherwise.
+         */
         fun isValidFileSize(sizeBytes: Long): Boolean = sizeBytes <= MAX_FILE_SIZE
 
+        /**
+         * Checks if the file is a valid image type (jpg, jpeg, png).
+         * @param fileName File name string.
+         * @return True if valid, false otherwise.
+         */
         fun isValidImageType(fileName: String): Boolean {
             val extension = fileName.substringAfterLast('.', "").lowercase()
             return allowedImageTypes.contains(extension)
         }
 
+        /**
+         * Checks if the file is a valid document type (pdf, jpg, jpeg, png).
+         * @param fileName File name string.
+         * @return True if valid, false otherwise.
+         */
         fun isValidDocumentType(fileName: String): Boolean {
             val extension = fileName.substringAfterLast('.', "").lowercase()
             return allowedDocumentTypes.contains(extension)
         }
 
+        /**
+         * Returns a file size error message, or null if valid.
+         * @param sizeBytes File size in bytes.
+         * @return Error message string or null.
+         */
         fun getFileSizeError(sizeBytes: Long): String? =
             if (!isValidFileSize(sizeBytes)) {
                 "File size must not exceed ${MAX_FILE_SIZE / (1024 * 1024)}MB"
@@ -260,6 +403,12 @@ object ValidationUtils {
                 null
             }
 
+        /**
+         * Returns a file type error message, or null if valid.
+         * @param fileName File name string.
+         * @param isDocument True if validating as document, false for image.
+         * @return Error message string or null.
+         */
         fun getFileTypeError(
             fileName: String,
             isDocument: Boolean = true,

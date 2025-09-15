@@ -14,24 +14,57 @@ import com.soshopay.domain.util.Result
 import com.soshopay.domain.util.SoshoPayException
 import com.soshopay.domain.util.ValidationUtils
 
+/**
+ * Implementation of [AuthRepository] for managing authentication workflows in the SoshoPay domain.
+ *
+ * This class coordinates between the remote API ([AuthApiService]), token storage ([TokenStorage]),
+ * profile cache ([ProfileCache]), and user preferences ([UserPreferences]) to provide robust, validated,
+ * and secure authentication management. It supports OTP verification, PIN setup and updates, login/logout,
+ * token refresh, user creation, and mobile number changes.
+ *
+ * Key features:
+ * - Validates all user input before sending to the API, returning detailed errors if validation fails.
+ * - Handles normalization of Zimbabwe phone numbers and PIN validation.
+ * - Manages authentication and refresh tokens securely, including saving, clearing, and refreshing.
+ * - Caches user profile data after successful login and updates cache on mobile change.
+ * - Provides fallback and error handling for all authentication operations.
+ * - Logs all major authentication events for observability and debugging.
+ * - Supports mobile number change workflows with OTP verification and confirmation.
+ *
+ * @property authApiService Remote API service for authentication operations.
+ * @property tokenStorage Secure storage for authentication and refresh tokens.
+ * @property profileCache Local cache for user profile data.
+ * @property userPreferences Storage for user-specific preferences and device ID.
+ */
 class AuthRepositoryImpl(
     private val authApiService: AuthApiService,
     private val tokenStorage: TokenStorage,
     private val profileCache: ProfileCache,
     private val userPreferences: UserPreferences,
 ) : AuthRepository {
+    /**
+     * Sends an OTP to the provided phone number after validating and normalizing it.
+     *
+     * @param phoneNumber The user's phone number to receive the OTP.
+     * @return [Result] containing [OtpSession] on success, or an error if validation fails or the API call is unsuccessful.
+     *
+     * Steps:
+     * - Validates the phone number format.
+     * - Normalizes the phone number for Zimbabwe.
+     * - Retrieves the device ID from user preferences.
+     * - Logs the OTP request event.
+     * - Calls the remote API to send the OTP.
+     * - Maps the API response to an [OtpSession] and logs the result.
+     */
     override suspend fun sendOtp(phoneNumber: String): Result<OtpSession> {
         // Validate phone number
         val validationError = ValidationUtils.Phone.getValidationError(phoneNumber)
         if (validationError != null) {
             return Result.Error(SoshoPayException.ValidationException(validationError))
         }
-
         val normalizedPhone = ValidationUtils.Phone.normalizeZimbabwePhone(phoneNumber)
         val deviceId = userPreferences.getDeviceId()
-
         Logger.logAuthEvent("OTP_REQUEST_STARTED", normalizedPhone)
-
         return when (val result = authApiService.sendOtp(normalizedPhone, deviceId)) {
             is Result.Success -> {
                 val otpSession = AuthMapper.mapToOtpSession(result.data, normalizedPhone)
@@ -46,6 +79,16 @@ class AuthRepositoryImpl(
         }
     }
 
+    /**
+     * Verifies the OTP code for a given session.
+     *
+     * Validates the OTP session for expiration and retry attempts, checks the entered code format,
+     * logs the verification event, and calls the remote API to verify the OTP.
+     *
+     * @param otpSession The current OTP session containing session details.
+     * @param enteredCode The OTP code entered by the user.
+     * @return [Result] containing a temporary token on success, or an error if validation fails or the API call is unsuccessful.
+     */
     override suspend fun verifyOtp(
         otpSession: OtpSession,
         enteredCode: String,
@@ -79,6 +122,17 @@ class AuthRepositoryImpl(
         }
     }
 
+    /**
+     * Verifies the OTP code for a given session.
+     *
+     * This function checks if the provided `OtpSession` is expired or has exceeded retry attempts,
+     * validates the format of the entered OTP code, logs the verification event, and calls the remote API
+     * to verify the OTP. On success, it returns a temporary token; on failure, it returns a detailed error.
+     *
+     * @param otpSession The current OTP session containing session details.
+     * @param enteredCode The OTP code entered by the user.
+     * @return [Result] containing a temporary token as [String] on success, or an error if validation fails or the API call is unsuccessful.
+     */
     override suspend fun setPin(
         tempToken: String,
         pin: String,
@@ -116,6 +170,17 @@ class AuthRepositoryImpl(
         }
     }
 
+    /**
+     * Authenticates a user with the provided phone number and PIN.
+     *
+     * Validates the phone number and PIN, normalizes the phone number, retrieves the device ID,
+     * logs the login event, and calls the remote API to perform login. On success, saves the authentication token,
+     * caches the user profile, and logs the result.
+     *
+     * @param phoneNumber The user's phone number.
+     * @param pin The user's PIN.
+     * @return [Result] containing [AuthToken] on success, or an error if validation fails or the API call is unsuccessful.
+     */
     override suspend fun login(
         phoneNumber: String,
         pin: String,
@@ -169,6 +234,15 @@ class AuthRepositoryImpl(
         }
     }
 
+    /**
+     * Refreshes the authentication token using the stored refresh token.
+     *
+     * Retrieves the current and refresh tokens, validates their presence, logs the refresh event,
+     * and calls the remote API to refresh the token. On success, saves the new token and logs the result.
+     * Clears tokens on failure.
+     *
+     * @return [Result] containing [AuthToken] on success, or an error if tokens are missing or the API call fails.
+     */
     override suspend fun refreshToken(): Result<AuthToken> {
         val currentToken = tokenStorage.getAuthToken()
         val refreshToken = tokenStorage.getRefreshToken()
@@ -203,6 +277,14 @@ class AuthRepositoryImpl(
         }
     }
 
+    /**
+     * Logs out the current user by clearing tokens and cached profile data.
+     *
+     * Retrieves the device ID, logs the logout event, calls the remote API to log out,
+     * and clears local tokens and user profile. Returns success if all data is cleared, otherwise returns an error.
+     *
+     * @return [Result] containing [Unit] on success, or an error if local data could not be cleared.
+     */
     override suspend fun logout(): Result<Unit> {
         val deviceId = userPreferences.getDeviceId()
 
@@ -224,10 +306,30 @@ class AuthRepositoryImpl(
         }
     }
 
+    /**
+     * Checks if the user is currently logged in by validating the stored token.
+     *
+     * @return `true` if the token is valid, `false` otherwise.
+     */
     override suspend fun isLoggedIn(): Boolean = tokenStorage.isTokenValid()
 
+    /**
+     * Retrieves the currently cached user profile.
+     *
+     * @return [User] if available, or `null` if not cached.
+     */
     override suspend fun getCurrentUser(): User? = profileCache.getCurrentUser()
 
+    /**
+     * Updates the user's PIN after validating the current and new PINs.
+     *
+     * Validates both PINs, ensures they are different, logs the update event,
+     * and calls the remote API to update the PIN. Returns success or error based on the API response.
+     *
+     * @param currentPin The user's current PIN.
+     * @param newPin The new PIN to set.
+     * @return [Result] containing [Unit] on success, or an error if validation fails or the API call fails.
+     */
     override suspend fun updatePin(
         currentPin: String,
         newPin: String,
@@ -262,6 +364,19 @@ class AuthRepositoryImpl(
         }
     }
 
+    /**
+     * Creates a new client (user) with the provided personal details and PIN.
+     *
+     * Validates the first and last names, phone number, and PIN, normalizes the phone number,
+     * logs the client creation event, and calls the remote API to create the client. On success,
+     * maps and returns the created user.
+     *
+     * @param firstName The user's first name.
+     * @param lastName The user's last name.
+     * @param phoneNumber The user's phone number.
+     * @param pin The user's PIN.
+     * @return [Result] containing [User] on success, or an error if validation fails or the API call fails.
+     */
     override suspend fun createClient(
         firstName: String,
         lastName: String,
@@ -318,6 +433,15 @@ class AuthRepositoryImpl(
         }
     }
 
+    /**
+     * Initiates the mobile number change workflow.
+     *
+     * Validates the new mobile number, normalizes it, and calls the remote API to start the change process.
+     * Returns a change token on success, or an error if validation fails or the API call fails.
+     *
+     * @param newMobile The new mobile number to set.
+     * @return [Result] containing the change token as [String] on success, or an error.
+     */
     override suspend fun startMobileChange(newMobile: String): Result<String> {
         val phoneError = ValidationUtils.Phone.getValidationError(newMobile)
         if (phoneError != null) {
@@ -333,6 +457,16 @@ class AuthRepositoryImpl(
         }
     }
 
+    /**
+     * Verifies the OTP for mobile number change.
+     *
+     * Checks OTP format, then calls the remote API to verify the change token and OTP.
+     * Returns a new change token on success, or an error if validation fails or the API call fails.
+     *
+     * @param changeToken The token received from starting the mobile change.
+     * @param otp The OTP code entered by the user.
+     * @return [Result] containing the new change token as [String] on success, or an error.
+     */
     override suspend fun verifyMobileChange(
         changeToken: String,
         otp: String,
@@ -347,19 +481,4 @@ class AuthRepositoryImpl(
             is Result.Loading -> result
         }
     }
-
-    override suspend fun confirmMobileChange(changeToken: String): Result<String> =
-        when (val result = authApiService.confirmMobileChange(changeToken)) {
-            is Result.Success -> {
-                // Update cached user with new mobile
-                val currentUser = getCurrentUser()
-                currentUser?.let { user ->
-                    val updatedUser = user.copy(phoneNumber = result.data.mobile)
-                    profileCache.saveUser(updatedUser)
-                }
-                Result.Success(result.data.mobile)
-            }
-            is Result.Error -> result
-            is Result.Loading -> result
-        }
 }

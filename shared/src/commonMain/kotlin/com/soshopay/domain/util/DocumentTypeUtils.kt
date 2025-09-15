@@ -2,11 +2,33 @@ package com.soshopay.domain.util
 
 import com.soshopay.domain.model.DocumentType
 
+/**
+ * Utility class for handling operations related to document types, such as validation,
+ * instructions, and mapping between API strings and enum values.
+ *
+ * Provides helper methods for determining required/optional document types, validating files,
+ * retrieving upload instructions, and converting between API strings and DocumentType enums.
+ */
 object DocumentTypeUtils {
+    /**
+     * Returns a list of required document types.
+     * @return List of DocumentType values that are required.
+     */
     fun getRequiredDocumentTypes(): List<DocumentType> = DocumentType.values().filter { it.isRequired() }
 
+    /**
+     * Returns a list of optional document types.
+     * @return List of DocumentType values that are optional.
+     */
     fun getOptionalDocumentTypes(): List<DocumentType> = DocumentType.values().filter { !it.isRequired() }
 
+    /**
+     * Validates a file for the specified document type, checking size, format, and name.
+     * @param documentType The type of document being validated.
+     * @param fileName The name of the file to validate.
+     * @param fileSizeBytes The size of the file in bytes.
+     * @return ValidationResult indicating validity and any error messages.
+     */
     fun validateFileForDocumentType(
         documentType: DocumentType,
         fileName: String,
@@ -37,6 +59,11 @@ object DocumentTypeUtils {
         )
     }
 
+    /**
+     * Returns a list of upload instructions for the specified document type.
+     * @param documentType The type of document for which instructions are needed.
+     * @return List of instruction strings.
+     */
     fun getUploadInstructions(documentType: DocumentType): List<String> =
         when (documentType) {
             DocumentType.PROOF_OF_RESIDENCE ->
@@ -62,6 +89,11 @@ object DocumentTypeUtils {
                 )
         }
 
+    /**
+     * Maps an API string to the corresponding DocumentType enum value.
+     * @param apiString The API string representing a document type.
+     * @return DocumentType if matched, or null if not recognized.
+     */
     fun getDocumentTypeFromApiString(apiString: String): DocumentType? =
         when (apiString.lowercase()) {
             "proof_of_residence", "proof-of-residence" -> DocumentType.PROOF_OF_RESIDENCE
@@ -70,6 +102,11 @@ object DocumentTypeUtils {
             else -> null
         }
 
+    /**
+     * Converts a DocumentType enum value to its corresponding API string.
+     * @param documentType The DocumentType to convert.
+     * @return API string representation of the document type.
+     */
     fun getApiStringFromDocumentType(documentType: DocumentType): String =
         when (documentType) {
             DocumentType.PROOF_OF_RESIDENCE -> "proof_of_residence"
