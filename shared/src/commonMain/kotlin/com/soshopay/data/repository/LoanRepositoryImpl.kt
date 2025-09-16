@@ -11,12 +11,36 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 
+/**
+ * Implementation of [LoanRepository] for managing all loan-related operations in the SoshoPay domain.
+ *
+ * This class coordinates between the remote API ([LoanApiService]), local storage ([LocalLoanStorage]),
+ * and cache manager ([CacheManager]) to provide robust, efficient, and validated loan management.
+ * It supports workflows for cash loans, PayGo loans, general loan management, local caching, and validation.
+ *
+ * Key features:
+ * - Uses local cache for fast access and offline fallback, with cache validity checks and sync intervals.
+ * - Validates all loan applications before submission, returning detailed errors if validation fails.
+ * - Updates local cache after successful remote operations to keep data in sync.
+ * - Provides fallback to cached data on API errors where possible.
+ * - Supports reactive loan observation via [Flow].
+ * - Handles both cash loan and PayGo loan workflows, including drafts, history, details, and agreements.
+ *
+ * @property loanApiService Remote API service for loan operations.
+ * @property localStorage Local storage for loan data and cache.
+ * @property cacheManager Cache manager for sync intervals and cache metadata.
+ */
 class LoanRepositoryImpl(
     private val loanApiService: LoanApiService,
     private val localStorage: LocalLoanStorage,
     private val cacheManager: CacheManager,
 ) : LoanRepository {
-    // ========== CASH LOAN METHODS ==========
+    /**
+     * Retrieves the form data required for a cash loan application, using cache if valid.
+     * Checks cache validity and sync interval before fetching from API.
+     * Falls back to cached data if API fails.
+     * @return [Result] containing [CashLoanFormData] if successful, or an error.
+     */
     override suspend fun getCashLoanFormData(): Result<CashLoanFormData> {
         return try {
             // Check cache first
@@ -46,6 +70,11 @@ class LoanRepositoryImpl(
         }
     }
 
+    /**
+     * Calculates the terms for a cash loan based on the provided request.
+     * @param request The calculation request parameters.
+     * @return [Result] containing [CashLoanTerms] if successful, or an error.
+     */
     override suspend fun calculateCashLoanTerms(request: CashLoanCalculationRequest): Result<CashLoanTerms> =
         try {
             val apiResponse = loanApiService.calculateCashLoanTerms(request)
@@ -58,6 +87,12 @@ class LoanRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Submits a cash loan application after validating it.
+     * Clears draft after successful submission.
+     * @param application The cash loan application data.
+     * @return [Result] containing the application ID if successful, or an error.
+     */
     override suspend fun submitCashLoanApplication(application: CashLoanApplication): Result<String> {
         return try {
             // Validate application first
@@ -80,6 +115,11 @@ class LoanRepositoryImpl(
         }
     }
 
+    /**
+     * Saves a draft of the cash loan application locally.
+     * @param application The cash loan application data.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun saveDraftCashLoanApplication(application: CashLoanApplication): Result<Unit> =
         try {
             localStorage.saveDraftCashLoanApplication(application)
@@ -88,6 +128,11 @@ class LoanRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Retrieves a draft cash loan application for the specified user.
+     * @param userId The user ID.
+     * @return [Result] containing the draft [CashLoanApplication] if found, or null if not present.
+     */
     override suspend fun getDraftCashLoanApplication(userId: String): Result<CashLoanApplication?> =
         try {
             val draft = localStorage.getDraftCashLoanApplication(userId)
@@ -96,6 +141,11 @@ class LoanRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Deletes a draft cash loan application by application ID.
+     * @param applicationId The ID of the draft application to delete.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun deleteDraftCashLoanApplication(applicationId: String): Result<Unit> =
         try {
             localStorage.deleteDraftCashLoanApplication(applicationId)
@@ -105,6 +155,13 @@ class LoanRepositoryImpl(
         }
 
     // ========== PAYGO LOAN METHODS ==========
+
+    /**
+     * Retrieves the list of PayGo loan categories, using cache if valid.
+     * Checks cache validity and sync interval before fetching from API.
+     * Falls back to cached data if API fails.
+     * @return [Result] containing a list of category names if successful, or an error.
+     */
     override suspend fun getPayGoCategories(): Result<List<String>> {
         return try {
             // Check cache first
@@ -141,6 +198,13 @@ class LoanRepositoryImpl(
         }
     }
 
+    /**
+     * Retrieves the products for a given PayGo category, using cache if valid.
+     * Checks cache validity and sync interval before fetching from API.
+     * Falls back to cached data if API fails.
+     * @param categoryId The category ID.
+     * @return [Result] containing a list of [PayGoProduct] if successful, or an error.
+     */
     override suspend fun getCategoryProducts(categoryId: String): Result<List<PayGoProduct>> {
         return try {
             // Check cache first
@@ -177,6 +241,11 @@ class LoanRepositoryImpl(
         }
     }
 
+    /**
+     * Calculates the terms for a PayGo loan based on the provided request.
+     * @param request The calculation request parameters.
+     * @return [Result] containing [PayGoLoanTerms] if successful, or an error.
+     */
     override suspend fun calculatePayGoTerms(request: PayGoCalculationRequest): Result<PayGoLoanTerms> =
         try {
             val apiResponse = loanApiService.calculatePayGoTerms(request)
@@ -189,6 +258,12 @@ class LoanRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Submits a PayGo loan application after validating it.
+     * Clears draft after successful submission.
+     * @param application The PayGo loan application data.
+     * @return [Result] containing the application ID if successful, or an error.
+     */
     override suspend fun submitPayGoApplication(application: PayGoLoanApplication): Result<String> {
         return try {
             // Validate application first
@@ -211,6 +286,11 @@ class LoanRepositoryImpl(
         }
     }
 
+    /**
+     * Saves a draft of the PayGo loan application locally.
+     * @param application The PayGo loan application data.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun saveDraftPayGoApplication(application: PayGoLoanApplication): Result<Unit> =
         try {
             localStorage.saveDraftPayGoApplication(application)
@@ -219,6 +299,11 @@ class LoanRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Retrieves a draft PayGo loan application for the specified user.
+     * @param userId The user ID.
+     * @return [Result] containing the draft [PayGoLoanApplication] if found, or null if not present.
+     */
     override suspend fun getDraftPayGoApplication(userId: String): Result<PayGoLoanApplication?> =
         try {
             val draft = localStorage.getDraftPayGoApplication(userId)
@@ -227,6 +312,11 @@ class LoanRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Deletes a draft PayGo loan application by application ID.
+     * @param applicationId The ID of the draft application to delete.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun deleteDraftPayGoApplication(applicationId: String): Result<Unit> =
         try {
             localStorage.deleteDraftPayGoApplication(applicationId)
@@ -236,6 +326,15 @@ class LoanRepositoryImpl(
         }
 
     // ========== GENERAL LOAN METHODS ==========
+
+    /**
+     * Retrieves the user's loan history with optional filtering and pagination.
+     * Caches loans for offline access and falls back to cache if API fails.
+     * @param filter The filter for loan history (default: "all").
+     * @param page The page number (default: 1).
+     * @param limit The number of items per page (default: 20).
+     * @return [Result] containing [LoanHistoryResponse] if successful, or an error.
+     */
     override suspend fun getLoanHistory(
         filter: String,
         page: Int,
@@ -294,6 +393,13 @@ class LoanRepositoryImpl(
             }
         }
 
+    /**
+     * Retrieves the details for a specific loan by loan ID, using cache if valid.
+     * Checks cache validity and sync interval before fetching from API.
+     * Falls back to cached data if API fails.
+     * @param loanId The loan ID.
+     * @return [Result] containing [LoanDetails] if successful, or an error.
+     */
     override suspend fun getLoanDetails(loanId: String): Result<LoanDetails> {
         return try {
             // Check cache first
@@ -323,6 +429,10 @@ class LoanRepositoryImpl(
         }
     }
 
+    /**
+     * Retrieves the user's current active loans, using cache if API fails.
+     * @return [Result] containing a list of [Loan] if successful, or an error.
+     */
     override suspend fun getCurrentLoans(): Result<List<Loan>> =
         try {
             val apiResponse = loanApiService.getCurrentLoans()
@@ -350,6 +460,11 @@ class LoanRepositoryImpl(
             }
         }
 
+    /**
+     * Downloads the loan agreement document for the specified loan ID.
+     * @param loanId The loan ID.
+     * @return [Result] containing the agreement as a [ByteArray] if successful, or an error.
+     */
     override suspend fun downloadLoanAgreement(loanId: String): Result<ByteArray> =
         try {
             val apiResponse = loanApiService.downloadLoanAgreement(loanId)
@@ -362,6 +477,11 @@ class LoanRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Withdraws a loan application by application ID and refreshes loan data after withdrawal.
+     * @param applicationId The application ID to withdraw.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun withdrawApplication(applicationId: String): Result<Unit> =
         try {
             val apiResponse = loanApiService.withdrawApplication(applicationId)
@@ -376,6 +496,10 @@ class LoanRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Synchronizes loans from the remote server to local storage.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun syncLoansFromRemote(): Result<Unit> =
         try {
             val apiResponse = loanApiService.getLoanHistory()
@@ -392,8 +516,19 @@ class LoanRepositoryImpl(
         }
 
     // ========== LOCAL/CACHE METHODS ==========
+
+    /**
+     * Observes updates to the user's loans as a [Flow].
+     * @return A [Flow] emitting the current list of [Loan] whenever updates occur.
+     */
     override fun observeLoanUpdates(): Flow<List<Loan>> = localStorage.observeLoans()
 
+    /**
+     * Observes the status of a loan application by application ID as a [Flow].
+     * Emits the current status from cache.
+     * @param applicationId The application ID.
+     * @return A [Flow] emitting the current [ApplicationStatus] for the application.
+     */
     override fun observeApplicationStatus(applicationId: String): Flow<ApplicationStatus> =
         flow {
             // This would require a more complex implementation with periodic API checks
@@ -414,6 +549,10 @@ class LoanRepositoryImpl(
             }
         }
 
+    /**
+     * Retrieves the cached loans from local storage.
+     * @return [Result] containing a list of [Loan] if successful, or an error.
+     */
     override suspend fun getCachedLoans(): Result<List<Loan>> =
         try {
             val loans = localStorage.getAllLoans()
@@ -422,6 +561,11 @@ class LoanRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Retrieves the cached details for a specific loan by loan ID.
+     * @param loanId The loan ID.
+     * @return [Result] containing [LoanDetails] if found, or null if not present.
+     */
     override suspend fun getCachedLoanDetails(loanId: String): Result<LoanDetails?> =
         try {
             val details = localStorage.getLoanDetails(loanId)
@@ -430,7 +574,13 @@ class LoanRepositoryImpl(
             Result.Error(e)
         }
 
-    // ========== VALIDATION METHODS ==========
+    /**
+     * Validates a cash loan application before submission.
+     * Checks for required fields, value constraints, and terms acceptance.
+     * Adds warnings for collateral value less than loan amount.
+     * @param application The cash loan application data.
+     * @return [ValidationResult] indicating validity, errors, and warnings.
+     */
     override fun validateCashLoanApplication(application: CashLoanApplication): ValidationResult {
         val errors = mutableListOf<String>()
         val warnings = mutableListOf<String>()
@@ -481,6 +631,12 @@ class LoanRepositoryImpl(
         )
     }
 
+    /**
+     * Validates a PayGo loan application before submission.
+     * Checks for required fields, completeness of guarantor info, and terms acceptance.
+     * @param application The PayGo loan application data.
+     * @return [ValidationResult] indicating validity, errors, and warnings.
+     */
     override fun validatePayGoApplication(application: PayGoLoanApplication): ValidationResult {
         val errors = mutableListOf<String>()
         val warnings = mutableListOf<String>()

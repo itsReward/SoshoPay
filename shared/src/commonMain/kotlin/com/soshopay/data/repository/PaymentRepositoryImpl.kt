@@ -18,12 +18,36 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 
+/**
+ * Implementation of [PaymentRepository] for managing all payment-related operations in the SoshoPay domain.
+ *
+ * This class coordinates between the remote API ([PaymentApiService]), local storage ([LocalPaymentStorage]),
+ * and cache manager ([CacheManager]) to provide robust, efficient, and validated payment management.
+ * It supports workflows for dashboard retrieval, payment history, payment processing, status tracking,
+ * receipt/documentation, early payoff, local caching, and validation.
+ *
+ * Key features:
+ * - Uses local cache for fast access and offline fallback, with cache validity checks and sync intervals.
+ * - Validates all payment requests before submission, returning detailed errors if validation fails.
+ * - Updates local cache after successful remote operations to keep data in sync.
+ * - Provides fallback to cached data on API errors where possible.
+ * - Supports reactive payment observation via [Flow].
+ * - Handles payment processing, status tracking, receipts, early payoff, and recommended payment calculations.
+ *
+ * @property paymentApiService Remote API service for payment operations.
+ * @property localStorage Local storage for payment data and cache.
+ * @property cacheManager Cache manager for sync intervals and cache metadata.
+ */
 class PaymentRepositoryImpl(
     private val paymentApiService: PaymentApiService,
     private val localStorage: LocalPaymentStorage,
     private val cacheManager: CacheManager,
 ) : PaymentRepository {
-    // ========== DASHBOARD & OVERVIEW ==========
+    /**
+     * Retrieves the payment dashboard, using cache if valid. Checks cache validity and sync interval before fetching from API.
+     * Falls back to cached data if API fails.
+     * @return [Result] containing [PaymentDashboard] if successful, or an error.
+     */
     override suspend fun getPaymentDashboard(): Result<PaymentDashboard> {
         return try {
             // Check cache first
@@ -53,6 +77,12 @@ class PaymentRepositoryImpl(
         }
     }
 
+    /**
+     * Retrieves the user's payment history with pagination. Caches payments for offline access and falls back to cache if API fails.
+     * @param page The page number (default: 1).
+     * @param limit The number of items per page (default: 20).
+     * @return [Result] containing [PaymentHistoryResponse] if successful, or an error.
+     */
     override suspend fun getPaymentHistory(
         page: Int,
         limit: Int,
@@ -110,6 +140,11 @@ class PaymentRepositoryImpl(
             }
         }
 
+    /**
+     * Retrieves the available payment methods, using cache if valid. Checks cache validity and sync interval before fetching from API.
+     * Falls back to cached data if API fails.
+     * @return [Result] containing a list of [PaymentMethodInfo] if successful, or an error.
+     */
     override suspend fun getPaymentMethods(): Result<List<PaymentMethodInfo>> {
         return try {
             // Check cache first
@@ -146,7 +181,11 @@ class PaymentRepositoryImpl(
         }
     }
 
-    // ========== PAYMENT PROCESSING ==========
+    /**
+     * Processes a payment after validating the request. Saves payment to local storage with processing status.
+     * @param request The payment request data.
+     * @return [Result] containing the payment ID if successful, or an error.
+     */
     override suspend fun processPayment(request: PaymentRequest): Result<String> {
         return try {
             // Validate payment request first
@@ -185,6 +224,11 @@ class PaymentRepositoryImpl(
         }
     }
 
+    /**
+     * Retrieves the status of a payment and updates local payment record.
+     * @param paymentId The payment ID.
+     * @return [Result] containing [PaymentStatus] if successful, or an error.
+     */
     override suspend fun getPaymentStatus(paymentId: String): Result<PaymentStatus> =
         try {
             val apiResponse = paymentApiService.getPaymentStatus(paymentId)
@@ -212,6 +256,11 @@ class PaymentRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Cancels a payment and updates local payment record.
+     * @param paymentId The payment ID.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun cancelPayment(paymentId: String): Result<Unit> =
         try {
             val apiResponse = paymentApiService.cancelPayment(paymentId)
@@ -235,6 +284,11 @@ class PaymentRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Retries a failed payment and updates local payment record.
+     * @param paymentId The payment ID.
+     * @return [Result] containing the new payment ID if successful, or an error.
+     */
     override suspend fun retryFailedPayment(paymentId: String): Result<String> =
         try {
             val apiResponse = paymentApiService.retryFailedPayment(paymentId)
@@ -260,7 +314,11 @@ class PaymentRepositoryImpl(
             Result.Error(e)
         }
 
-    // ========== RECEIPT & DOCUMENTATION ==========
+    /**
+     * Downloads the payment receipt document for the specified receipt number.
+     * @param receiptNumber The receipt number.
+     * @return [Result] containing the receipt as a [ByteArray] if successful, or an error.
+     */
     override suspend fun downloadReceipt(receiptNumber: String): Result<ByteArray> =
         try {
             val apiResponse = paymentApiService.downloadReceipt(receiptNumber)
@@ -273,6 +331,11 @@ class PaymentRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Retrieves the payment receipt, using cache if available. Falls back to cached data if API fails.
+     * @param receiptNumber The receipt number.
+     * @return [Result] containing [PaymentReceipt] if successful, or an error.
+     */
     override suspend fun getPaymentReceipt(receiptNumber: String): Result<PaymentReceipt> {
         return try {
             // Check cache first
@@ -297,6 +360,12 @@ class PaymentRepositoryImpl(
         }
     }
 
+    /**
+     * Resends the payment receipt to the specified email address.
+     * @param receiptNumber The receipt number.
+     * @param email The email address to send the receipt to.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun resendReceiptToEmail(
         receiptNumber: String,
         email: String,
@@ -312,7 +381,11 @@ class PaymentRepositoryImpl(
             Result.Error(e)
         }
 
-    // ========== EARLY PAYOFF ==========
+    /**
+     * Calculates the early payoff amount for a loan, using cache if fresh. Falls back to cached data if API fails.
+     * @param loanId The loan ID.
+     * @return [Result] containing [EarlyPayoffCalculation] if successful, or an error.
+     */
     override suspend fun calculateEarlyPayoff(loanId: String): Result<EarlyPayoffCalculation> {
         return try {
             // Check cache first
@@ -343,6 +416,12 @@ class PaymentRepositoryImpl(
         }
     }
 
+    /**
+     * Processes an early payoff payment after validating the request. Saves payment to local storage and clears early payoff cache.
+     * @param loanId The loan ID.
+     * @param paymentRequest The payment request data.
+     * @return [Result] containing the payment ID if successful, or an error.
+     */
     override suspend fun processEarlyPayoff(
         loanId: String,
         paymentRequest: PaymentRequest,
@@ -387,14 +466,26 @@ class PaymentRepositoryImpl(
         }
     }
 
-    // ========== LOCAL/CACHE METHODS ==========
+    /**
+     * Observes updates to the user's payments as a [Flow].
+     * @return A [Flow] emitting the current list of [Payment] whenever updates occur.
+     */
     override fun observePaymentUpdates(): Flow<List<Payment>> = localStorage.observePayments()
 
+    /**
+     * Observes the status of a payment by payment ID as a [Flow]. Emits the current status from cache.
+     * @param paymentId The payment ID.
+     * @return A [Flow] emitting the current [PaymentStatus] for the payment.
+     */
     override fun observePaymentStatus(paymentId: String): Flow<PaymentStatus> =
         localStorage.observePaymentById(paymentId).map { payment ->
             payment?.status ?: PaymentStatus.FAILED
         }
 
+    /**
+     * Observes the payment dashboard as a [Flow]. Emits a default dashboard if cache is empty.
+     * @return A [Flow] emitting the current [PaymentDashboard] whenever updates occur.
+     */
     override fun observeDashboard(): Flow<PaymentDashboard> =
         localStorage.observePaymentDashboard().map { dashboard ->
             dashboard ?: PaymentDashboard(
@@ -408,6 +499,10 @@ class PaymentRepositoryImpl(
             )
         }
 
+    /**
+     * Retrieves the cached payments from local storage.
+     * @return [Result] containing a list of [Payment] if successful, or an error.
+     */
     override suspend fun getCachedPayments(): Result<List<Payment>> =
         try {
             val payments = localStorage.getAllPayments()
@@ -416,6 +511,10 @@ class PaymentRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Retrieves the cached payment dashboard from local storage.
+     * @return [Result] containing [PaymentDashboard] if successful, or an error.
+     */
     override suspend fun getCachedDashboard(): Result<PaymentDashboard?> =
         try {
             val dashboard = localStorage.getPaymentDashboard()
@@ -424,6 +523,10 @@ class PaymentRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Synchronizes payments from the remote server to local storage.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun syncPaymentsFromRemote(): Result<Unit> =
         try {
             val apiResponse = paymentApiService.getPaymentHistory()
@@ -439,9 +542,20 @@ class PaymentRepositoryImpl(
             Result.Error(e)
         }
 
-    // ========== VALIDATION & UTILITY ==========
+    /**
+     * Validates a payment request before submission.
+     * Checks for required fields, value constraints, and method validity.
+     * @param request The payment request data.
+     * @return [ValidationResult] indicating validity, errors, and warnings.
+     */
     override fun validatePaymentRequest(request: PaymentRequest): ValidationResult = request.validate()
 
+    /**
+     * Checks if a payment is eligible for the specified loan and amount.
+     * @param loanId The loan ID.
+     * @param amount The payment amount.
+     * @return [Result] containing true if eligible, false otherwise.
+     */
     override suspend fun checkPaymentEligibility(
         loanId: String,
         amount: Double,
@@ -458,6 +572,11 @@ class PaymentRepositoryImpl(
             Result.Error(e)
         }
 
+    /**
+     * Retrieves the recommended payment amount for the specified loan.
+     * @param loanId The loan ID.
+     * @return [Result] containing the recommended amount if successful, or an error.
+     */
     override suspend fun getRecommendedPaymentAmount(loanId: String): Result<Double> =
         try {
             val apiResponse = paymentApiService.getRecommendedPaymentAmount(loanId)
@@ -472,8 +591,17 @@ class PaymentRepositoryImpl(
         }
 
     // ========== PRIVATE UTILITY METHODS ==========
+
+    /**
+     * Generates a unique payment ID for local storage.
+     * @return A unique payment ID string.
+     */
     private fun generateId(): String = "payment_${Clock.System.now().toEpochMilliseconds()}_${(1000..9999).random()}"
 
+    /**
+     * Retrieves the current user ID. Typically injected from auth repository or user session.
+     * @return The current user ID string.
+     */
     private fun getCurrentUserId(): String {
         // This would typically be injected from auth repository or user session
         // For now, we'll return a placeholder

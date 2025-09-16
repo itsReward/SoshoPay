@@ -77,7 +77,7 @@ fun TopHeading(){
     )
 }
 
-@Preview
+@Preview(showSystemUi = false, showBackground = false, name = "preview1")
 @Composable
 fun SubText(){
     Text(

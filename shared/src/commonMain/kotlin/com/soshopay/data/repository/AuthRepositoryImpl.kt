@@ -481,4 +481,8 @@ class AuthRepositoryImpl(
             is Result.Loading -> result
         }
     }
+
+    override suspend fun confirmMobileChange(changeToken: String): Result<String> {
+        TODO("Not yet implemented")
+    }
 }

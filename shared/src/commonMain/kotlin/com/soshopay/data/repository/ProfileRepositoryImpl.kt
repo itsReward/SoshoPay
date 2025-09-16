@@ -20,10 +20,37 @@ import com.soshopay.domain.util.SoshoPayException
 import com.soshopay.domain.util.ValidationUtils
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Implementation of [ProfileRepository] for managing user profile operations in the SoshoPay domain.
+ *
+ * This class coordinates between the remote API ([ProfileApiService]) and local cache ([ProfileCache]) to provide
+ * robust, efficient, and validated profile management. It supports retrieval and update of user profile,
+ * personal details, address, profile picture, documents, next of kin, client type changes, and profile sync.
+ *
+ * Key features:
+ * - Uses cache for fast access and offline fallback, with cache validity checks.
+ * - Validates all user input before sending to the API, returning detailed errors if validation fails.
+ * - Updates local cache after successful remote operations to keep data in sync.
+ * - Handles file/document validation for uploads, including size and type checks.
+ * - Provides fallback to cached data on API errors where possible.
+ * - Logs all major events for observability and debugging.
+ * - Supports reactive profile observation via [Flow].
+ *
+ * @property profileApiService Remote API service for profile operations.
+ * @property profileCache Local cache for user profile data.
+ */
 class ProfileRepositoryImpl(
     private val profileApiService: ProfileApiService,
     private val profileCache: ProfileCache,
 ) : ProfileRepository {
+    /**
+     * Retrieves the user's profile, optionally forcing a refresh from the remote source.
+     * Checks cache validity and returns cached data if valid and not forcing refresh.
+     * Updates cache after successful remote fetch.
+     * Falls back to cached data if API fails.
+     * @param forceRefresh If true, forces a refresh from the remote source.
+     * @return [Result] containing the [User] if successful, or an error.
+     */
     override suspend fun getUserProfile(forceRefresh: Boolean): Result<User> {
         // Check cache first if not forcing refresh
         if (!forceRefresh) {
@@ -69,6 +96,12 @@ class ProfileRepositoryImpl(
         }
     }
 
+    /**
+     * Updates the user's personal details after validating input.
+     * Updates cache after successful remote update.
+     * @param personalDetails The new personal details to update.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun updatePersonalDetails(personalDetails: PersonalDetails): Result<Unit> {
         // Validate personal details
         val validationResult =
@@ -114,6 +147,12 @@ class ProfileRepositoryImpl(
         }
     }
 
+    /**
+     * Updates the user's address information after validating input.
+     * Updates cache after successful remote update.
+     * @param address The new address to update.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun updateAddress(address: Address): Result<Unit> {
         // Validate address
         val validationResult =
@@ -158,6 +197,13 @@ class ProfileRepositoryImpl(
         }
     }
 
+    /**
+     * Uploads a new profile picture for the user after validating file size and type.
+     * Updates cache after successful remote upload.
+     * @param imageBytes The image data as a byte array.
+     * @param fileName The name of the image file.
+     * @return [Result] containing the image URL or ID if successful, or an error.
+     */
     override suspend fun uploadProfilePicture(
         imageBytes: ByteArray,
         fileName: String,
@@ -209,6 +255,12 @@ class ProfileRepositoryImpl(
         }
     }
 
+    /**
+     * Uploads multiple documents for the user after validating file size and type.
+     * Updates cache after successful remote upload.
+     * @param documents A map of [DocumentType] to a pair of document bytes and file name.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun uploadDocuments(documents: Map<DocumentType, Pair<ByteArray, String>>): Result<Unit> {
         // Validate all documents
         for ((type, fileData) in documents) {
@@ -277,6 +329,14 @@ class ProfileRepositoryImpl(
         }
     }
 
+    /**
+     * Replaces a specific document for the user after validating file size and type.
+     * Updates cache after successful remote replacement.
+     * @param documentType The type of document to replace.
+     * @param document The document data as a byte array.
+     * @param fileName The name of the document file.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun replaceDocument(
         documentType: DocumentType,
         document: ByteArray,
@@ -337,6 +397,11 @@ class ProfileRepositoryImpl(
         }
     }
 
+    /**
+     * Retrieves all documents for the user, updating cache after successful remote fetch.
+     * Falls back to cached documents if API fails.
+     * @return [Result] containing [Documents] if successful, or an error.
+     */
     override suspend fun getDocuments(): Result<Documents> =
         when (val result = profileApiService.getDocuments()) {
             is Result.Success -> {
@@ -362,6 +427,12 @@ class ProfileRepositoryImpl(
             is Result.Loading -> result
         }
 
+    /**
+     * Updates the user's next of kin information after validating address and phone number.
+     * Updates cache after successful remote update.
+     * @param nextOfKin The new next of kin details.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun updateNextOfKin(nextOfKin: NextOfKin): Result<Unit> {
         // Validate next of kin data
         val addressValidation =
@@ -407,6 +478,11 @@ class ProfileRepositoryImpl(
         }
     }
 
+    /**
+     * Retrieves the user's next of kin information, updating cache after successful remote fetch.
+     * Falls back to cached next of kin if API fails.
+     * @return [Result] containing [NextOfKin] if successful, or an error.
+     */
     override suspend fun getNextOfKin(): Result<NextOfKin> =
         when (val result = profileApiService.getNextOfKin()) {
             is Result.Success -> {
@@ -432,8 +508,18 @@ class ProfileRepositoryImpl(
             is Result.Loading -> result
         }
 
+    /**
+     * Retrieves the available client types for the user from the remote source.
+     * @return [Result] containing a list of client type names if successful, or an error.
+     */
     override suspend fun getAvailableClientTypes(): Result<List<String>> = profileApiService.getClientTypes()
 
+    /**
+     * Requests a change to a new client type for the user after validating the type.
+     * Updates cache after successful remote update.
+     * @param newType The new client type to request.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun requestClientTypeChange(newType: String): Result<Unit> {
         val availableTypesResult = getAvailableClientTypes()
         if (availableTypesResult is Result.Success) {
@@ -465,10 +551,24 @@ class ProfileRepositoryImpl(
         }
     }
 
+    /**
+     * Synchronizes the user's profile data with the remote source and updates cache.
+     * @return [Result] containing [Unit] if successful, or an error.
+     */
     override suspend fun syncProfile(): Result<Unit> = getUserProfile(forceRefresh = true).map { }
 
+    /**
+     * Observes changes to the user's profile as a [Flow].
+     * @return A [Flow] emitting the current [User] or null when the profile changes.
+     */
     override fun observeProfile(): Flow<User?> = profileCache.observeUser()
 
+    /**
+     * Creates a pending [Document] instance for uploads, used for cache updates.
+     * @param type The document type.
+     * @param fileData Pair of document bytes and file name.
+     * @return A [Document] with pending verification status.
+     */
     private fun createPendingDocument(
         type: DocumentType,
         fileData: Pair<ByteArray, String>,
@@ -493,5 +593,9 @@ class ProfileRepositoryImpl(
         )
     }
 
+    /**
+     * Generates a unique document ID for uploads.
+     * @return A unique document ID string.
+     */
     private fun generateDocumentId(): String = "doc_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}_${(1000..9999).random()}"
 }
