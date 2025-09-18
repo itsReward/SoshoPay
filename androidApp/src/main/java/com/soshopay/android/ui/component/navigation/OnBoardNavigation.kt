@@ -10,13 +10,7 @@ enum class OnBoardNavigationRoutes {
 }
 
 fun NavGraphBuilder.onBoardDestination(onNavigateToLogin: () -> Unit) {
-    composable(OnBoardNavigationRoutes.OnBoard.name){
+    composable(OnBoardNavigationRoutes.OnBoard.name) {
         AppStart(onNavigateToLogin)
     }
 }
-
-fun NavController.navigateToLogin(){
-    navigate(LoginSignUpNavigationRoutes.Login.name)
-}
-
-

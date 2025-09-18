@@ -23,20 +23,6 @@ fun NavGraphBuilder.loginDestination(
     }
 }
 
-fun NavGraphBuilder.homeDestination() {
-    composable(LoginSignUpNavigationRoutes.Home.name) {
-        HomeMenu()
-    }
-}
-
-fun NavController.navigateToSignUp() {
-    navigate(LoginSignUpNavigationRoutes.SignUp.name)
-}
-
-fun NavController.navigateToHome() {
-    navigate(LoginSignUpNavigationRoutes.Home.name)
-}
-
 fun NavGraphBuilder.signUpDestination(onPopBackStack: () -> Unit) {
     composable(LoginSignUpNavigationRoutes.SignUp.name) {
         SignUpPage(onPopBackStack)

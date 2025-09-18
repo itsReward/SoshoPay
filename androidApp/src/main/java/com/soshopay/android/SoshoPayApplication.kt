@@ -2,6 +2,8 @@ package com.soshopay.android
 
 import android.app.Application
 import com.soshopay.android.di.androidDatabaseModule
+import com.soshopay.android.di.androidModule
+import com.soshopay.di.androidPlatformModule
 import com.soshopay.di.sharedModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -15,6 +17,8 @@ class SoshoPayApplication : Application() {
             modules(
                 sharedModule,
                 androidDatabaseModule,
+                androidModule,
+                androidPlatformModule,
             )
         }
     }

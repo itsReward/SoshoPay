@@ -162,4 +162,34 @@ sealed class SoshoPayException(
     data class UnknownException(
         override val message: String = "An unknown error occurred",
     ) : SoshoPayException(message)
+
+    /**
+     * User registration exceptions
+     */
+    class UserAlreadyExistsException(
+        message: String = "User with this phone number already exists",
+    ) : SoshoPayException(message)
+
+    class UserNotFoundException(
+        message: String = "User not found",
+    ) : SoshoPayException(message)
+
+    /**
+     * Authentication exceptions for login/authorization failures
+     */
+    data class UnauthorizedException(
+        override val message: String,
+    ) : SoshoPayException(message)
 }
+
+/**
+ * Extension function to convert generic exceptions to SoshoPayException
+ */
+fun Throwable.toSoshoPayException(): SoshoPayException =
+    when (this) {
+        is SoshoPayException -> this
+        /*is java.net.UnknownHostException -> SoshoPayException.NetworkException("No internet connection")
+        is java.net.SocketTimeoutException -> SoshoPayException.NetworkException("Request timeout")
+        is java.net.ConnectException -> SoshoPayException.NetworkException("Connection failed")*/
+        else -> SoshoPayException.UnknownException(this.message ?: "An unexpected error occurred")
+    }
