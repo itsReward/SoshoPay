@@ -74,11 +74,11 @@ class FileUploadServiceImpl(
                 }
                 HttpStatusCode.PayloadTooLarge -> {
                     throw com.soshopay.domain.util.SoshoPayException
-                        .FileSizeExceededException()
+                        .FileUploadException("File too large to upload", fileName)
                 }
                 HttpStatusCode.UnsupportedMediaType -> {
                     throw com.soshopay.domain.util.SoshoPayException
-                        .UnsupportedFileTypeException()
+                        .FileUploadException("Unsupported file type", fileName)
                 }
                 else -> {
                     val error = response.body<ErrorResponse>()
@@ -122,11 +122,11 @@ class FileUploadServiceImpl(
                 }
                 HttpStatusCode.PayloadTooLarge -> {
                     throw com.soshopay.domain.util.SoshoPayException
-                        .FileSizeExceededException()
+                        .FileUploadException("File too large to upload")
                 }
                 HttpStatusCode.UnsupportedMediaType -> {
                     throw com.soshopay.domain.util.SoshoPayException
-                        .UnsupportedFileTypeException()
+                        .FileUploadException("Unsupported file type")
                 }
                 else -> {
                     val error = response.body<ErrorResponse>()

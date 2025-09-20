@@ -211,12 +211,12 @@ class ProfileRepositoryImpl(
         // Validate file
         val sizeError = ValidationUtils.File.getFileSizeError(imageBytes.size.toLong())
         if (sizeError != null) {
-            return Result.Error(SoshoPayException.FileSizeExceededException(sizeError))
+            return Result.Error(SoshoPayException.FileUploadException(sizeError))
         }
 
         val typeError = ValidationUtils.File.getFileTypeError(fileName, isDocument = false)
         if (typeError != null) {
-            return Result.Error(SoshoPayException.UnsupportedFileTypeException(typeError))
+            return Result.Error(SoshoPayException.FileUploadException(typeError))
         }
 
         Logger.logFileUpload(fileName, imageBytes.size.toLong(), false)
@@ -268,12 +268,12 @@ class ProfileRepositoryImpl(
 
             val sizeError = ValidationUtils.File.getFileSizeError(bytes.size.toLong())
             if (sizeError != null) {
-                return Result.Error(SoshoPayException.FileSizeExceededException("$type: $sizeError"))
+                return Result.Error(SoshoPayException.FileUploadException("$type: $sizeError"))
             }
 
             val typeError = ValidationUtils.File.getFileTypeError(fileName, isDocument = true)
             if (typeError != null) {
-                return Result.Error(SoshoPayException.UnsupportedFileTypeException("$type: $typeError"))
+                return Result.Error(SoshoPayException.FileUploadException("$type: $typeError"))
             }
         }
 
@@ -345,12 +345,12 @@ class ProfileRepositoryImpl(
         // Validate document
         val sizeError = ValidationUtils.File.getFileSizeError(document.size.toLong())
         if (sizeError != null) {
-            return Result.Error(SoshoPayException.FileSizeExceededException(sizeError))
+            return Result.Error(SoshoPayException.FileUploadException(sizeError))
         }
 
         val typeError = ValidationUtils.File.getFileTypeError(fileName, isDocument = true)
         if (typeError != null) {
-            return Result.Error(SoshoPayException.UnsupportedFileTypeException(typeError))
+            return Result.Error(SoshoPayException.FileUploadException(typeError))
         }
 
         val apiDocumentType =
