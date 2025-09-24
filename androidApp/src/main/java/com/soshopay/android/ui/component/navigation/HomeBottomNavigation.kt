@@ -11,10 +11,12 @@ import com.soshopay.android.ui.component.admin.Settings
 import com.soshopay.android.ui.component.calculator.LoanCalculator
 import com.soshopay.android.ui.component.calculator.LoanCalculatorMenu
 import com.soshopay.android.ui.component.loanApplication.LoanApplication
+import com.soshopay.android.ui.component.loans.LoanDashboardScreen
 import com.soshopay.android.ui.component.loans.LoanDetails
 import com.soshopay.android.ui.component.loans.LoansListHome
 import com.soshopay.android.ui.component.notifications.Notifications
 import com.soshopay.android.ui.component.payments.LoanPayments
+import com.soshopay.android.ui.state.LoanPaymentNavigation
 
 enum class HomeNavigationRoutes {
     Home,
@@ -66,11 +68,13 @@ fun NavGraphBuilder.loans(
     navigateToPayments: () -> Unit,
     onPop: () -> Unit,
 ) {
-    composable(HomeNavigationRoutes.LoansList.name) {
-        LoansListHome(
+    composable(LoanPaymentRoutes.LoanDashboard.name) {
+        LoanDashboardScreen(
             navigateToLoansDetails,
             navigateToPayments,
-            onPop,
+            navigateToPayments,
+            navigateToPayments,
+            navigateToPayments,
         )
     }
 }

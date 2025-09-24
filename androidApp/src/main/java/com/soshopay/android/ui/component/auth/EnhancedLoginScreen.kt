@@ -122,7 +122,7 @@ fun EnhancedLoginScreen(
         ) {
             // Logo and App Name
             Image(
-                painter = painterResource(id = R.drawable.sosho_logo),
+                painter = painterResource(id = if (isDarkMode) R.drawable.sosho_logo_dark else R.drawable.sosho_logo),
                 contentDescription = "SoshoPay Logo",
                 modifier = Modifier.size(120.dp),
             )
@@ -159,9 +159,9 @@ fun EnhancedLoginScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors =
                     CardDefaults.cardColors(
-                        containerColor = if (isDarkMode) MaterialTheme.colorScheme.surface else Color.White,
+                        containerColor = Color.Transparent,
                     ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
