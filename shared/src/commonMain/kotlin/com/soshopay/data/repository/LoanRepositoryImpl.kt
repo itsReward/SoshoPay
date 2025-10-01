@@ -3,12 +3,24 @@ package com.soshopay.data.repository
 import com.soshopay.data.local.CacheManager
 import com.soshopay.data.local.LocalLoanStorage
 import com.soshopay.data.remote.LoanApiService
-import com.soshopay.domain.model.*
+import com.soshopay.domain.model.ApplicationStatus
+import com.soshopay.domain.model.CashLoanApplication
+import com.soshopay.domain.model.CashLoanCalculationRequest
+import com.soshopay.domain.model.CashLoanFormData
+import com.soshopay.domain.model.CashLoanTerms
+import com.soshopay.domain.model.Loan
+import com.soshopay.domain.model.LoanDetails
+import com.soshopay.domain.model.LoanHistoryResponse
+import com.soshopay.domain.model.LoanStatus
+import com.soshopay.domain.model.PayGoCalculationRequest
+import com.soshopay.domain.model.PayGoLoanApplication
+import com.soshopay.domain.model.PayGoLoanTerms
+import com.soshopay.domain.model.PayGoProduct
+import com.soshopay.domain.model.ValidationResult
 import com.soshopay.domain.repository.LoanRepository
 import com.soshopay.domain.repository.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 
 /**
