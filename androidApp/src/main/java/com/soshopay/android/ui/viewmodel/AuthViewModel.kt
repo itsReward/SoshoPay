@@ -14,6 +14,7 @@ import com.soshopay.domain.usecase.auth.LoginUseCase
 import com.soshopay.domain.usecase.auth.SendOtpUseCase
 import com.soshopay.domain.usecase.auth.SetPinUseCase
 import com.soshopay.domain.usecase.auth.VerifyOtpUseCase
+import com.soshopay.domain.util.Logger
 import com.soshopay.domain.util.Result
 import com.soshopay.domain.util.SoshoPayException
 import kotlinx.coroutines.Job
@@ -456,7 +457,10 @@ class AuthViewModel(
         when {
             phoneNumber.isEmpty() -> "Phone number is required"
             phoneNumber.length < 10 -> "Phone number must be at least 10 digits"
-            !phoneNumber.startsWith("07") && !phoneNumber.startsWith("+263") -> "Please enter a valid Zimbabwe phone number"
+            !phoneNumber.startsWith("07") && !phoneNumber.startsWith("+263") -> {
+                Logger.e("error in phone number", "ERROR")
+                "Please enter a valid Zimbabwe phone number"
+            }
             else -> null
         }
 

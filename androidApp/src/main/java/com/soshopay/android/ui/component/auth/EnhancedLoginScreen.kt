@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -65,6 +66,7 @@ import androidx.compose.ui.unit.sp
 import com.soshopay.android.R
 import com.soshopay.android.ui.state.AuthEvent
 import com.soshopay.android.ui.state.AuthNavigation
+import com.soshopay.android.ui.theme.DarkTertiaryBackground
 import com.soshopay.android.ui.theme.SoshoPayTheme
 import com.soshopay.android.ui.viewmodel.AuthViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -217,6 +219,8 @@ fun EnhancedLoginScreen(
                                     } else {
                                         MaterialTheme.colorScheme.primary
                                     },
+                                focusedTextColor = if (isDarkMode) Color.White else Color.Black,
+                                unfocusedTextColor = if (isDarkMode) Color.White else Color.Black,
                             ),
                     )
 
@@ -288,6 +292,8 @@ fun EnhancedLoginScreen(
                                     } else {
                                         MaterialTheme.colorScheme.primary
                                     },
+                                focusedTextColor = if (isDarkMode) Color.White else Color.Black,
+                                unfocusedTextColor = if (isDarkMode) Color.White else Color.Black,
                             ),
                     )
 
@@ -394,6 +400,7 @@ fun EnhancedLoginScreen(
                                 MaterialTheme.typography.headlineSmall.copy(
                                     fontWeight = FontWeight.Bold,
                                 ),
+                            color = if (isDarkMode) Color.White else Color.Black,
                         )
                     },
                     text = {
@@ -405,11 +412,15 @@ fun EnhancedLoginScreen(
                     confirmButton = {
                         TextButton(
                             onClick = { viewModel.onEvent(AuthEvent.ClearLoginError) },
+                            colors =
+                                ButtonDefaults.textButtonColors(
+                                    contentColor = if (isDarkMode) Color.White else Color.Black,
+                                ),
                         ) {
                             Text("OK")
                         }
                     },
-                    containerColor = if (isDarkMode) MaterialTheme.colorScheme.surface else Color.White,
+                    containerColor = if (isDarkMode) DarkTertiaryBackground else Color.White,
                 )
             }
         }

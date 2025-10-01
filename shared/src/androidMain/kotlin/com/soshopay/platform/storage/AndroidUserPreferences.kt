@@ -3,6 +3,7 @@ package com.soshopay.platform.storage
 import android.content.Context
 import android.content.SharedPreferences
 import com.soshopay.domain.storage.UserPreferences
+import com.soshopay.domain.util.DeviceUtils
 import com.soshopay.domain.util.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow

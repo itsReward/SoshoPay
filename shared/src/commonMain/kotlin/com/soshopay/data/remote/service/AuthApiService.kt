@@ -88,7 +88,7 @@ class AuthApiServiceImpl(
     private val httpClient: HttpClient,
 ) : AuthApiService {
     companion object {
-        private const val BASE_PATH = "api/mobile/client"
+        private const val BASE_PATH = "https://beta.soshopay.com/api/mobile/client"
     }
 
     override suspend fun sendOtp(

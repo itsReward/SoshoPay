@@ -38,7 +38,7 @@ fun SoshoPayApp() {
     // Start with Login screen - the ViewModel will handle checking if user is already logged in
     NavHost(
         navController = navController,
-        startDestination = AuthNavigationRoutes.Home.name,
+        startDestination = AuthNavigationRoutes.Login.name,
     ) {
         // Onboarding destination (if needed)
         onBoardDestination(

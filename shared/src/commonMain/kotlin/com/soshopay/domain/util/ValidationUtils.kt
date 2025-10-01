@@ -31,6 +31,7 @@ object ValidationUtils {
          */
         fun isValidZimbabwePhone(phone: String): Boolean {
             val cleanPhone = phone.replace(Regex("[^0-9]"), "")
+            Logger.e("Cleaned phone number $cleanPhone", "AUTH")
 
             return when {
                 // International format: +263771234567 or 263771234567
@@ -86,8 +87,9 @@ object ValidationUtils {
          * @return Error message string or null.
          */
         fun getValidationError(phone: String): String? {
+            Logger.e("Validating phone number $phone", "AUTH")
             if (phone.isBlank()) return "Phone number is required"
-            if (!isValidZimbabwePhone(phone)) {
+            if (isValidZimbabwePhone(phone)) {
                 return "Please enter a valid Zimbabwe phone number (e.g., +263 77 123 4567)"
             }
             return null

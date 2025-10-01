@@ -199,8 +199,6 @@ class AuthRepositoryImpl(
         val normalizedPhone = ValidationUtils.Phone.normalizeZimbabwePhone(phoneNumber)
         val deviceId = userPreferences.getDeviceId()
 
-        Logger.logAuthEvent("LOGIN_STARTED", normalizedPhone)
-
         return when (val result = authApiService.login(normalizedPhone, pin, deviceId)) {
             is Result.Success -> {
                 val authToken = AuthMapper.mapToAuthToken(result.data)
@@ -208,7 +206,6 @@ class AuthRepositoryImpl(
                 // Save token
                 val tokenSaved = tokenStorage.saveAuthToken(authToken)
                 if (!tokenSaved) {
-                    Logger.e("Failed to save auth token after login", "AUTH")
                     return Result.Error(SoshoPayException.UnknownException("Failed to save authentication"))
                 }
 
