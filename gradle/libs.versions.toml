@@ -32,7 +32,8 @@ koin = "3.5.3"
 lifecycle = "2.7.0"
 multiplatform-settings = "1.1.1"
 kermit = "2.0.2"
-mockk = "1.12.5"
+mockk = "1.13.9"
+mockk-common = "1.12.5"
 navigation-compose = "2.9.3"
 
 [libraries]
@@ -87,7 +88,8 @@ lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-com
 # Other
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
-mockk-common = { module = "io.mockk:mockk-common", version.ref = "mockk" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+mockk-common = { module = "io.mockk:mockk-common", version.ref = "mockk-common" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

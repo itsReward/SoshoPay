@@ -10,7 +10,21 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 
+/**
+ * Service interface for handling file upload operations in the SoshoPay application.
+ * Provides methods for single and multiple file uploads, with future support for signed URL uploads.
+ */
 interface FileUploadService {
+    /**
+     * Uploads a single file to the specified path on the server.
+     *
+     * @param fileBytes The binary content of the file to upload
+     * @param fileName The name of the file, including extension
+     * @param uploadPath The server endpoint path where the file should be uploaded
+     * @param fieldName The form field name to use for the file upload (defaults to "file")
+     * @return [Result] containing the URL of the uploaded file if successful, or an error if the upload fails
+     * @throws SoshoPayException.FileUploadException if the upload fails for any reason
+     */
     suspend fun uploadFile(
         fileBytes: ByteArray,
         fileName: String,
@@ -18,22 +32,59 @@ interface FileUploadService {
         fieldName: String = "file",
     ): Result<String>
 
+    /**
+     * Uploads multiple files simultaneously to the specified path.
+     *
+     * @param files Map of field names to pairs of (file bytes, filename)
+     * @param uploadPath The server endpoint path where the files should be uploaded
+     * @return [Result] indicating success or failure of the upload operation
+     * @throws SoshoPayException.FileUploadException if any file upload fails
+     */
     suspend fun uploadMultipleFiles(
         files: Map<String, Pair<ByteArray, String>>, // fieldName to (bytes, fileName)
         uploadPath: String,
     ): Result<Unit>
 
+    /**
+     * Gets a signed URL for direct file upload to cloud storage.
+     * Currently not implemented - planned for future use.
+     *
+     * @param fileName The name of the file to be uploaded
+     * @param fileType The MIME type of the file
+     * @return [Result] containing the signed URL if successful
+     * @throws SoshoPayException.UnknownException as this feature is not yet implemented
+     */
     suspend fun getSignedUploadUrl(
         fileName: String,
         fileType: String,
     ): Result<String>
 
+    /**
+     * Uploads a file directly to cloud storage using a signed URL.
+     * Currently not implemented - planned for future use.
+     *
+     * @param signedUrl The pre-signed URL to upload to
+     * @param fileBytes The binary content of the file to upload
+     * @return [Result] indicating success or failure of the upload
+     * @throws SoshoPayException.UnknownException as this feature is not yet implemented
+     */
     suspend fun uploadToSignedUrl(
         signedUrl: String,
         fileBytes: ByteArray,
     ): Result<Unit>
 }
 
+/**
+ * Implementation of [FileUploadService] that handles file uploads using Ktor's [HttpClient].
+ *
+ * This implementation:
+ * - Supports single and multiple file uploads using multipart form data
+ * - Handles various HTTP response status codes and converts them to appropriate exceptions
+ * - Provides detailed error messages for common upload failures
+ * - Has placeholder implementations for future cloud storage integration
+ *
+ * @property httpClient Ktor HTTP client used for making upload requests
+ */
 class FileUploadServiceImpl(
     private val httpClient: HttpClient,
 ) : FileUploadService {

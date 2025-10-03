@@ -12,58 +12,66 @@ kotlin {
             }
         }
     }
-    
+
     listOf(
         iosX64(),
         iosArm64(),
-        iosSimulatorArm64()
+        iosSimulatorArm64(),
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
             baseName = "Shared"
             isStatic = true
         }
     }
-    
+
     sourceSets {
         commonMain.dependencies {
             // Coroutines
             implementation(libs.kotlinx.coroutines.core)
-            
+
             // Serialization
             implementation(libs.kotlinx.serialization.json)
-            
+
             // Networking
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinx.json)
-            
+
             // Dependency Injection
             implementation(libs.koin.core)
-            
+
             // DateTime
             implementation(libs.kotlinx.datetime)
-            
+
             // Settings
             implementation(libs.multiplatform.settings)
-            
+
             // Logging
             implementation(libs.kermit)
-            
+
             // ViewModel
             implementation(libs.lifecycle.viewmodel)
+
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
-        
+
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.koin.android)
             implementation(libs.kotlinx.coroutines.android)
         }
-        
+
+        androidUnitTest.dependencies {
+            implementation(libs.mockk)
+            implementation(libs.kotlin.test.junit)
+        }
+
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
-        
+
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
@@ -74,14 +82,20 @@ kotlin {
 
 android {
     namespace = "com.soshopay.shared"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    
+    compileSdk =
+        libs.versions.android.compileSdk
+            .get()
+            .toInt()
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    
+
     defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
+        minSdk =
+            libs.versions.android.minSdk
+                .get()
+                .toInt()
     }
 }

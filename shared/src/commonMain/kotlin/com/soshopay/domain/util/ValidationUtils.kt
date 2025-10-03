@@ -41,7 +41,7 @@ object ValidationUtils {
                 }
                 // Local format: 0771234567
                 cleanPhone.startsWith("0") -> {
-                    cleanPhone.length == 10 && validPrefixes.any { cleanPhone.substring(1).startsWith(it) }
+                    cleanPhone.length == 10 && validPrefixes.any { cleanPhone.startsWith("0$it".drop(1)) }
                 }
                 // Direct format: 771234567
                 cleanPhone.length == 9 -> {
@@ -89,7 +89,7 @@ object ValidationUtils {
         fun getValidationError(phone: String): String? {
             Logger.e("Validating phone number $phone", "AUTH")
             if (phone.isBlank()) return "Phone number is required"
-            if (isValidZimbabwePhone(phone)) {
+            if (!isValidZimbabwePhone(phone)) {
                 return "Please enter a valid Zimbabwe phone number (e.g., +263 77 123 4567)"
             }
             return null

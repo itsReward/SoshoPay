@@ -84,6 +84,21 @@ interface AuthApiService {
     suspend fun confirmMobileChange(changeToken: String): Result<MobileChangeConfirmResponse>
 }
 
+/**
+ * Implementation of [AuthApiService] that communicates with the SoshoPay backend API for authentication-related operations.
+ *
+ * This class uses Ktor's [HttpClient] to perform HTTP requests to the backend endpoints for actions such as:
+ * - Sending and verifying OTPs
+ * - Setting and updating PINs
+ * - Logging in and out
+ * - Creating new clients
+ * - Refreshing tokens
+ * - Managing mobile number changes
+ *
+ * Each method wraps the HTTP call in a [safeCall] to handle exceptions and map API errors to [SoshoPayException] types.
+ *
+ * @property httpClient The Ktor HTTP client used to make network requests.
+ */
 class AuthApiServiceImpl(
     private val httpClient: HttpClient,
 ) : AuthApiService {
