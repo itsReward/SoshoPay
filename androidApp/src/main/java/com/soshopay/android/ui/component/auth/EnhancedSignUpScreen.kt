@@ -223,21 +223,16 @@ fun EnhancedSignUpScreen(
                         colors =
                             OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor =
-                                    if (isDarkMode) {
-                                        colorResource(
-                                            id = R.color.yellow,
-                                        )
-                                    } else {
-                                        MaterialTheme.colorScheme.primary
-                                    },
+                                    colorResource(
+                                        id = R.color.yellow,
+                                    ),
                                 focusedLabelColor =
-                                    if (isDarkMode) {
-                                        colorResource(
-                                            id = R.color.yellow,
-                                        )
-                                    } else {
-                                        MaterialTheme.colorScheme.primary
-                                    },
+                                    colorResource(
+                                        id = R.color.yellow,
+                                    ),
+                                focusedTextColor = if (isDarkMode) Color.White else Color.Black,
+                                unfocusedTextColor = if (isDarkMode) Color.White else Color.Black,
+                                errorTextColor = colorResource(R.color.ecocash_red),
                             ),
                     )
 
@@ -249,7 +244,7 @@ fun EnhancedSignUpScreen(
                         enabled = signUpState.isSignUpEnabled && !signUpState.isLoading,
                         colors =
                             ButtonDefaults.buttonColors(
-                                containerColor = if (isDarkMode) colorResource(id = R.color.yellow) else MaterialTheme.colorScheme.primary,
+                                containerColor = colorResource(id = R.color.yellow),
                                 contentColor = Color.White,
                                 disabledContainerColor = Color.Gray.copy(alpha = 0.3f),
                             ),
@@ -310,7 +305,7 @@ fun EnhancedSignUpScreen(
                     withStyle(
                         style =
                             SpanStyle(
-                                color = if (isDarkMode) colorResource(id = R.color.yellow) else MaterialTheme.colorScheme.primary,
+                                color = colorResource(id = R.color.yellow),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
                             ),
@@ -384,19 +379,21 @@ fun EnhancedSignUpScreen(
                                 MaterialTheme.typography.headlineSmall.copy(
                                     fontWeight = FontWeight.Bold,
                                 ),
+                            color = if (isDarkMode) Color.White else Color.Black,
                         )
                     },
                     text = {
                         Text(
                             text = signUpState.errorMessage!!,
                             style = MaterialTheme.typography.bodyMedium,
+                            color = if (isDarkMode) Color.White else Color.Black,
                         )
                     },
                     confirmButton = {
                         TextButton(
                             onClick = { viewModel.onEvent(AuthEvent.ClearSignUpError) },
                         ) {
-                            Text("OK")
+                            Text("OK", color = if (isDarkMode) Color.White else Color.Black)
                         }
                     },
                     containerColor = if (isDarkMode) MaterialTheme.colorScheme.surface else Color.White,

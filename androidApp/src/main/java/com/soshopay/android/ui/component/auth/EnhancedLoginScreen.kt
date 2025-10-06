@@ -204,23 +204,16 @@ fun EnhancedLoginScreen(
                         colors =
                             OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor =
-                                    if (isDarkMode) {
-                                        colorResource(
-                                            id = R.color.yellow,
-                                        )
-                                    } else {
-                                        MaterialTheme.colorScheme.primary
-                                    },
+                                    colorResource(
+                                        id = R.color.yellow,
+                                    ),
                                 focusedLabelColor =
-                                    if (isDarkMode) {
-                                        colorResource(
-                                            id = R.color.yellow,
-                                        )
-                                    } else {
-                                        MaterialTheme.colorScheme.primary
-                                    },
+                                    colorResource(
+                                        id = R.color.yellow,
+                                    ),
                                 focusedTextColor = if (isDarkMode) Color.White else Color.Black,
                                 unfocusedTextColor = if (isDarkMode) Color.White else Color.Black,
+                                errorTextColor = colorResource(R.color.ecocash_red),
                             ),
                     )
 
@@ -277,23 +270,16 @@ fun EnhancedLoginScreen(
                         colors =
                             OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor =
-                                    if (isDarkMode) {
-                                        colorResource(
-                                            id = R.color.yellow,
-                                        )
-                                    } else {
-                                        MaterialTheme.colorScheme.primary
-                                    },
+                                    colorResource(
+                                        id = R.color.yellow,
+                                    ),
                                 focusedLabelColor =
-                                    if (isDarkMode) {
-                                        colorResource(
-                                            id = R.color.yellow,
-                                        )
-                                    } else {
-                                        MaterialTheme.colorScheme.primary
-                                    },
+                                    colorResource(
+                                        id = R.color.yellow,
+                                    ),
                                 focusedTextColor = if (isDarkMode) Color.White else Color.Black,
                                 unfocusedTextColor = if (isDarkMode) Color.White else Color.Black,
+                                errorTextColor = colorResource(R.color.ecocash_red),
                             ),
                     )
 
@@ -305,7 +291,7 @@ fun EnhancedLoginScreen(
                         enabled = loginState.isLoginEnabled && !loginState.isLoading,
                         colors =
                             ButtonDefaults.buttonColors(
-                                containerColor = if (isDarkMode) colorResource(id = R.color.yellow) else MaterialTheme.colorScheme.primary,
+                                containerColor = if (isDarkMode) colorResource(id = R.color.yellow) else colorResource(id = R.color.yellow),
                                 contentColor = Color.White,
                                 disabledContainerColor = Color.Gray.copy(alpha = 0.3f),
                             ),
@@ -366,7 +352,7 @@ fun EnhancedLoginScreen(
                     withStyle(
                         style =
                             SpanStyle(
-                                color = if (isDarkMode) colorResource(id = R.color.yellow) else MaterialTheme.colorScheme.primary,
+                                color = if (isDarkMode) colorResource(id = R.color.yellow) else colorResource(id = R.color.yellow),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
                             ),

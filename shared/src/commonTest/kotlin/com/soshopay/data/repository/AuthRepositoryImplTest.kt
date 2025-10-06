@@ -119,8 +119,8 @@ class AuthRepositoryImplTest {
     fun `login with valid credentials succeeds`() =
         runTest {
             // Given
-            val phone = "0771234567"
-            val normalizedPhone = "263771234567"
+            val phone = "0778811197"
+            val normalizedPhone = "263778811197"
             val pin = "1234"
             val deviceId = "test-device-id"
             val mockClientDto =
