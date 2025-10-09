@@ -113,7 +113,7 @@ fun LoanDashboardScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(if (isDarkMode) MaterialTheme.colorScheme.background else Color.White)
+                    .background(if (isDarkMode) MaterialTheme.colorScheme.primary else Color.White)
                     .verticalScroll(rememberScrollState()),
         ) {
             // Header Section
@@ -375,7 +375,7 @@ private fun LoanOptionCard(
         shape = RoundedCornerShape(16.dp),
         colors =
             CardDefaults.cardColors(
-                containerColor = if (isDarkMode) MaterialTheme.colorScheme.surface else Color.White,
+                containerColor = if (isDarkMode) MaterialTheme.colorScheme.onTertiary else Color.White,
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
     ) {
@@ -509,7 +509,7 @@ private fun QuickActionCard(
         shape = RoundedCornerShape(12.dp),
         colors =
             CardDefaults.cardColors(
-                containerColor = if (isDarkMode) MaterialTheme.colorScheme.surface else Color.White,
+                containerColor = if (isDarkMode) MaterialTheme.colorScheme.onTertiary else Color.White,
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
@@ -565,7 +565,7 @@ private fun ProfileIncompleteDialog(
                 Icon(
                     imageVector = Icons.Default.Warning,
                     contentDescription = "Warning",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = colorResource(id = R.color.yellow),
                 )
                 Text(
                     text = "Profile Incomplete",
@@ -573,6 +573,7 @@ private fun ProfileIncompleteDialog(
                         MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold,
                         ),
+                    color = if (isDarkMode) Color.White else Color.Black
                 )
             }
         },
@@ -587,18 +588,18 @@ private fun ProfileIncompleteDialog(
                 onClick = onNavigateToProfile,
                 colors =
                     ButtonDefaults.buttonColors(
-                        containerColor = if (isDarkMode) colorResource(id = R.color.yellow) else MaterialTheme.colorScheme.primary,
+                        containerColor =  colorResource(id = R.color.yellow),
                     ),
             ) {
-                Text("Complete Profile")
+                Text("Complete Profile", color = if (isDarkMode) Color.Black else Color.White)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Later")
+                Text(text = "Later", color = if (isDarkMode) Color.White else Color.Black)
             }
         },
-        containerColor = if (isDarkMode) MaterialTheme.colorScheme.surface else Color.White,
+        containerColor = if (isDarkMode) MaterialTheme.colorScheme.tertiary else Color.White,
     )
 }
 

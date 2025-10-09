@@ -4,6 +4,7 @@ import android.app.Application
 import com.soshopay.android.di.androidDatabaseModule
 import com.soshopay.android.di.androidModule
 import com.soshopay.di.androidPlatformModule
+import com.soshopay.di.networkModule
 import com.soshopay.di.sharedModule
 import com.soshopay.domain.util.Logger
 import org.koin.android.ext.koin.androidContext
@@ -97,6 +98,16 @@ class SoshoPayApplication : Application() {
             Logger.i("Shared module loaded successfully", "APPLICATION")
         } catch (e: Exception) {
             Logger.e("Critical: Failed to load shared module", "APPLICATION", e)
+            throw SecurityException("Cannot continue without shared module", e)
+        }
+
+        // Network module (most critical)
+        try {
+            Logger.d("Loading nrtwork module", "APPLICATION")
+            successfulModules.add(networkModule)
+            Logger.i("Network module loaded successfully", "APPLICATION")
+        } catch (e: Exception) {
+            Logger.e("Critical: Failed to load network module", "APPLICATION", e)
             throw SecurityException("Cannot continue without shared module", e)
         }
 
@@ -202,6 +213,7 @@ class SoshoPayApplication : Application() {
                 modules(
                     listOf(
                         sharedModule, // Only the most essential module
+                        networkModule,
                     ),
                 )
             }

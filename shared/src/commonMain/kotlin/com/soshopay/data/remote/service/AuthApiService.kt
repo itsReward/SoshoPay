@@ -103,7 +103,19 @@ class AuthApiServiceImpl(
     private val httpClient: HttpClient,
 ) : AuthApiService {
     companion object {
-        private const val BASE_PATH = "https://beta.soshopay.com/api/mobile/client"
+        /**
+         * Base path for authentication endpoints (relative to base URL)
+         *
+         * OLD: "https://beta.soshopay.com/api/mobile/client"
+         * NEW: "api/mobile/client" (relative path)
+         *
+         * The full URL will be: {baseUrl}/api/mobile/client/{endpoint}
+         * Examples:
+         * - Local: http://192.168.100.100:8080/api/mobile/client/login
+         * - Beta: https://beta.soshopay.com/api/mobile/client/login
+         * - Production: https://api.soshopay.com/api/mobile/client/login
+         */
+        private const val BASE_PATH = "api/mobile/client"
     }
 
     override suspend fun sendOtp(

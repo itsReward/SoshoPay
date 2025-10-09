@@ -57,7 +57,7 @@ import com.soshopay.android.ui.component.navigation.loanApplicationNavGraph
 import com.soshopay.android.ui.component.navigation.loanCalculator
 import com.soshopay.android.ui.component.navigation.loanCalculatorNavGraph
 import com.soshopay.android.ui.component.navigation.loanPayments
-import com.soshopay.android.ui.component.navigation.userLoansNavGraph
+import com.soshopay.android.ui.component.navigation.loans
 import com.soshopay.android.ui.component.navigation.navigateToAdmin
 import com.soshopay.android.ui.component.navigation.navigateToCashLoanCalculator
 import com.soshopay.android.ui.component.navigation.navigateToDeviceLoanCalculator
@@ -68,54 +68,62 @@ import com.soshopay.android.ui.component.navigation.navigateToNotifications
 import com.soshopay.android.ui.component.navigation.navigateToPaymentsList
 import com.soshopay.android.ui.component.navigation.notifications
 import com.soshopay.android.ui.component.navigation.onPop
+import com.soshopay.android.ui.component.navigation.userLoansNavGraph
 import com.soshopay.android.ui.theme.SoshoPayTheme
 import androidx.compose.material3.MaterialTheme as MaterialTheme1
 
 @Composable
 fun HomeMenu() {
-
     val navController = rememberNavController()
 
     val isDarkMode = isSystemInDarkTheme()
 
     SoshoPayTheme {
-        Scaffold (
-            modifier = Modifier
-                .background(MaterialTheme1.colorScheme.primary)
-                .windowInsetsPadding(WindowInsets.statusBars)
-        ){ innerPadding ->
+        Scaffold(
+            modifier =
+                Modifier
+                    .background(MaterialTheme1.colorScheme.primary)
+                    .windowInsetsPadding(WindowInsets.statusBars),
+        ) { innerPadding ->
 
-            NavHost(navController, startDestination = HomeNavigationRoutes.Home.name, modifier = Modifier.padding(innerPadding)){
+            NavHost(navController, startDestination = HomeNavigationRoutes.Home.name, modifier = Modifier.padding(innerPadding)) {
                 home(
                     navigateToLoansList = { navController.navigateToLoansList() },
                     navigateToLoanApplication = { navController.navigateToLoanApplication() },
                     navigateToPaymentsList = { navController.navigateToPaymentsList() },
-                    navigateToDeviceLoanCalculator = {navController.navigateToDeviceLoanCalculator()},
-                    navigateToCashLoanCalculator = {navController.navigateToCashLoanCalculator()},
-                    navigateToNotifications = {navController.navigateToNotifications()},
-                    navigateToAdmin = {navController.navigateToAdmin()},
+                    navigateToDeviceLoanCalculator = { navController.navigateToDeviceLoanCalculator() },
+                    navigateToCashLoanCalculator = { navController.navigateToCashLoanCalculator() },
+                    navigateToNotifications = { navController.navigateToNotifications() },
+                    navigateToAdmin = { navController.navigateToAdmin() },
                 )
+
+                loans(
+                    navigateToLoansDetails = { navController.navigateToLoanDetails() },
+                    navigateToPayments = { navController.navigateToPaymentsList() },
+                    onPop = { navController.onPop() },
+                )
+
                 loanPayments(
-                    onPop = { navController.onPop() }
+                    onPop = { navController.onPop() },
                 )
                 loanCalculator(
                     "",
-                    navigateToLoanApplication = { navController.navigateToLoanApplication()},
-                    onPop = { navController.onPop() }
+                    navigateToLoanApplication = { navController.navigateToLoanApplication() },
+                    onPop = { navController.onPop() },
                 )
                 notifications(onPop = { navController.onPop() })
                 admin(onPop = { navController.onPop() })
                 userLoansNavGraph(
-                    navigateToLoanDetails = { navController.navigateToLoanDetails()},
+                    navigateToLoanDetails = { navController.navigateToLoanDetails() },
                     navigateToLoanApplication = { navController.navigateToLoanApplication() },
                     navigateToPayments = { navController.navigateToPaymentsList() },
-                    onPop = { navController.onPop()}
+                    onPop = { navController.onPop() },
                 )
                 loanApplicationNavGraph(navController)
                 loanCalculatorNavGraph(
                     "",
                     navigateToLoanApplication = { navController.navigateToLoanApplication() },
-                    onPop = { navController.onPop() }
+                    onPop = { navController.onPop() },
                 )
             }
         }
@@ -130,28 +138,29 @@ fun HomeMenu(
     navigateToDeviceLoanCalculator: () -> Unit,
     navigateToCashLoanCalculator: () -> Unit,
     navigateToNotifications: () -> Unit,
-    navigateToAdmin: () -> Unit
-){
-
+    navigateToAdmin: () -> Unit,
+) {
     val isDarkMode = isSystemInDarkTheme()
     var showDialog by remember { mutableStateOf(false) }
 
-    val colors = listOf(
-        MaterialTheme1.colorScheme.primary,
-        MaterialTheme1.colorScheme.secondary,
-        MaterialTheme1.colorScheme.tertiary
-    )
+    val colors =
+        listOf(
+            MaterialTheme1.colorScheme.primary,
+            MaterialTheme1.colorScheme.secondary,
+            MaterialTheme1.colorScheme.tertiary,
+        )
 
-    val gradient = Brush.verticalGradient(
-        colors = colors
-    )
+    val gradient =
+        Brush.verticalGradient(
+            colors = colors,
+        )
 
-    if(showDialog){
+    if (showDialog) {
         LoanCalculatorDialog(
             isDarkMode,
             { showDialog = !showDialog },
             navigateToDeviceLoanCalculator,
-            navigateToCashLoanCalculator
+            navigateToCashLoanCalculator,
         )
     }
 
@@ -159,11 +168,12 @@ fun HomeMenu(
         columns = GridCells.Fixed(2),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-        modifier = Modifier
-            .background(gradient)
-            //.safeDrawingPadding()
-            .fillMaxHeight()
-    ){
+        modifier =
+            Modifier
+                .background(gradient)
+                // .safeDrawingPadding()
+                .fillMaxHeight(),
+    ) {
         item(span = { GridItemSpan(2) }) {
             HomeMenuHeading()
         }
@@ -171,10 +181,12 @@ fun HomeMenu(
             Row(horizontalArrangement = Arrangement.Center) {
                 Button(
                     onClick = navigateToLoanApplication,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = colorResource(id = R.color.yellow_one),
-                        contentColor = Color.White,))
-                {
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = colorResource(id = R.color.yellow_one),
+                            contentColor = Color.White,
+                        ),
+                ) {
                     Text("Apply for New Loan", color = Color.White, fontWeight = FontWeight(400))
                 }
             }
@@ -184,62 +196,73 @@ fun HomeMenu(
         item { MenuCard("Loan Calculator", R.drawable.calculate, { showDialog = !showDialog }, isDarkMode) }
         item { MenuCard("Your Notices", R.drawable.notifications, navigateToNotifications, isDarkMode) }
         item { MenuCard("Settings", R.drawable.settings, navigateToAdmin, isDarkMode) }
-        item { WhatsAppMenuCard("Chat With Us", {}, isDarkMode)
+        item {
+            WhatsAppMenuCard("Chat With Us", {}, isDarkMode)
         }
-
     }
 }
 
 @Composable
 fun HomeMenuHeading() {
     val isDarkMode = isSystemInDarkTheme()
-    val imageResourceId = if(isDarkMode) R.drawable.sosho_logo_dark else R.drawable.sosho_logo
+    val imageResourceId = if (isDarkMode) R.drawable.sosho_logo_dark else R.drawable.sosho_logo
 
     Image(
         painterResource(id = imageResourceId),
         contentDescription = "",
-        modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 16.dp)
-            .size(80.dp)
+        modifier =
+            Modifier
+                .padding(horizontal = 16.dp, vertical = 16.dp)
+                .size(80.dp),
     )
 }
 
 @Composable
-fun MenuCard(menuTitle: String, icon: Int, onClick: () -> Unit, isDarkMode: Boolean){
-
+fun MenuCard(
+    menuTitle: String,
+    icon: Int,
+    onClick: () -> Unit,
+    isDarkMode: Boolean,
+) {
     Card(
         shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if(isDarkMode) MaterialTheme1.colorScheme.tertiary else colorResource(id = R.color.white),
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if(isDarkMode) 0.dp else 2.dp
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp)
-            .clickable(onClick = onClick)
-    ){
+        colors =
+            CardDefaults.cardColors(
+                containerColor = if (isDarkMode) MaterialTheme1.colorScheme.tertiary else colorResource(id = R.color.white),
+            ),
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = if (isDarkMode) 0.dp else 2.dp,
+            ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+                .clickable(onClick = onClick),
+    ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
         ) {
             Icon(
                 painterResource(id = icon),
                 contentDescription = "",
-                tint = if(isDarkMode) MaterialTheme1.colorScheme.surfaceBright else colorResource(id = R.color.blue_gray_icon_color),
-                modifier = Modifier
-                    .size(90.dp)
-                    .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp)
+                tint = if (isDarkMode) MaterialTheme1.colorScheme.surfaceBright else colorResource(id = R.color.blue_gray_icon_color),
+                modifier =
+                    Modifier
+                        .size(90.dp)
+                        .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 16.dp),
             )
             Text(
                 text = menuTitle,
                 fontSize = 14.sp,
-                color = if(isDarkMode) colorResource(id = R.color.white) else colorResource(id = R.color.sosho_blue),
-                modifier = Modifier
-                    .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 24.dp)
+                color = if (isDarkMode) colorResource(id = R.color.white) else colorResource(id = R.color.sosho_blue),
+                modifier =
+                    Modifier
+                        .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 24.dp),
             )
 /*            HorizontalDivider(
                 thickness = 0.3.dp,
@@ -265,41 +288,51 @@ fun MenuCard(menuTitle: String, icon: Int, onClick: () -> Unit, isDarkMode: Bool
 }
 
 @Composable
-fun WhatsAppMenuCard(menuTitle: String, onClick: () -> Unit, isDarkMode: Boolean){
+fun WhatsAppMenuCard(
+    menuTitle: String,
+    onClick: () -> Unit,
+    isDarkMode: Boolean,
+) {
     Card(
         shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if(isDarkMode) MaterialTheme1.colorScheme.tertiary else colorResource(id = R.color.white),
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if(isDarkMode) 0.dp else 2.dp
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp)
-            .clickable(onClick = onClick)
-    ){
+        colors =
+            CardDefaults.cardColors(
+                containerColor = if (isDarkMode) MaterialTheme1.colorScheme.tertiary else colorResource(id = R.color.white),
+            ),
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = if (isDarkMode) 0.dp else 2.dp,
+            ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp)
+                .clickable(onClick = onClick),
+    ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
         ) {
-            //Spacer(modifier = Modifier.height(16.dp))
+            // Spacer(modifier = Modifier.height(16.dp))
             Image(
                 painterResource(id = R.drawable.whatsapp),
                 contentDescription = "",
                 contentScale = ContentScale.FillHeight,
-                modifier = Modifier
-                    .padding(16.dp)
-                    .size(50.dp)
+                modifier =
+                    Modifier
+                        .padding(16.dp)
+                        .size(50.dp),
             )
             Text(
                 text = menuTitle,
                 fontSize = 14.sp,
-                color = if(isDarkMode) colorResource(id = R.color.white) else colorResource(id = R.color.sosho_blue),
-                modifier = Modifier
-                    .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp)
+                color = if (isDarkMode) colorResource(id = R.color.white) else colorResource(id = R.color.sosho_blue),
+                modifier =
+                    Modifier
+                        .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp),
             )
 /*            HorizontalDivider(
                 thickness = 0.3.dp,
@@ -330,31 +363,35 @@ fun LoanCalculatorDialog(
     onButtonClicked: () -> Unit,
     navigateToDeviceLoanCalculator: () -> Unit,
     navigateToCashLoanCalculator: () -> Unit,
-){
+) {
     Dialog(onDismissRequest = onButtonClicked) {
         Card(
-            modifier = Modifier
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp)
-        ){
+            modifier =
+                Modifier
+                    .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+        ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .background(color = if(isDarkMode) MaterialTheme1.colorScheme.primary else colorResource(id = R.color.white))
-                    .padding(16.dp)
+                modifier =
+                    Modifier
+                        .background(color = if (isDarkMode) MaterialTheme1.colorScheme.primary else colorResource(id = R.color.white))
+                        .padding(16.dp),
             ) {
                 Icon(
                     painterResource(id = R.drawable.calculate),
                     contentDescription = "",
-                    modifier = Modifier
-                        .padding(start = 16.dp, top = 16.dp, end = 16.dp)
+                    modifier =
+                        Modifier
+                            .padding(start = 16.dp, top = 16.dp, end = 16.dp),
                 )
                 Text(
                     text = "Select a Calculator",
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier
-                        .padding(start = 16.dp, top = 12.dp, end = 16.dp)
+                    modifier =
+                        Modifier
+                            .padding(start = 16.dp, top = 12.dp, end = 16.dp),
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 LoanCalculatorDialogMenuOption(
@@ -363,13 +400,14 @@ fun LoanCalculatorDialog(
                     R.drawable.solar_power,
                     isDarkMode,
                     onButtonClicked,
-                    navigateToDeviceLoanCalculator
+                    navigateToDeviceLoanCalculator,
                 )
                 HorizontalDivider(
                     thickness = 0.3.dp,
                     color = Color.LightGray,
-                    modifier = Modifier
-                        .padding(top = 16.dp)
+                    modifier =
+                        Modifier
+                            .padding(top = 16.dp),
                 )
                 LoanCalculatorDialogMenuOption(
                     "Cash Calculator",
@@ -377,12 +415,13 @@ fun LoanCalculatorDialog(
                     R.drawable.payments,
                     isDarkMode,
                     onButtonClicked,
-                    navigateToCashLoanCalculator
+                    navigateToCashLoanCalculator,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     TextButton(
@@ -410,37 +449,41 @@ fun LoanCalculatorDialogMenuOption(
     icon: Int,
     isDarkMode: Boolean,
     onClick: () -> Unit,
-    navigateToCalculator: () -> Unit
-){
+    navigateToCalculator: () -> Unit,
+) {
     Row(
-        modifier = Modifier
-            .clickable(onClick = {
-                onClick()
-                navigateToCalculator()
-            })
-            .background(if (isDarkMode) MaterialTheme1.colorScheme.primary else Color.White)
-    ){
+        modifier =
+            Modifier
+                .clickable(onClick = {
+                    onClick()
+                    navigateToCalculator()
+                })
+                .background(if (isDarkMode) MaterialTheme1.colorScheme.primary else Color.White),
+    ) {
         Icon(
             painterResource(id = icon),
             contentDescription = "",
-            modifier = Modifier
-                .padding(start = 16.dp, top = 16.dp, end = 16.dp)
+            modifier =
+                Modifier
+                    .padding(start = 16.dp, top = 16.dp, end = 16.dp),
         )
         Column {
             Text(
                 text = calculator,
                 fontSize = 14.sp,
                 color = MaterialTheme1.colorScheme.surface,
-                modifier = Modifier
-                    .padding(start = 16.dp, top = 12.dp, end = 16.dp)
+                modifier =
+                    Modifier
+                        .padding(start = 16.dp, top = 12.dp, end = 16.dp),
             )
             Text(
                 text = subText,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Light,
                 color = MaterialTheme1.colorScheme.surface,
-                modifier = Modifier
-                    .padding(start = 16.dp, end = 16.dp)
+                modifier =
+                    Modifier
+                        .padding(start = 16.dp, end = 16.dp),
             )
         }
     }

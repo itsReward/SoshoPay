@@ -68,7 +68,7 @@ fun NavGraphBuilder.loans(
     navigateToPayments: () -> Unit,
     onPop: () -> Unit,
 ) {
-    composable(LoanPaymentRoutes.LoanDashboard.name) {
+    composable(HomeNavigationRoutes.LoansList.name) {
         LoanDashboardScreen(
             navigateToLoansDetails,
             navigateToPayments,

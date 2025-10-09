@@ -5,6 +5,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
 import android.util.Base64
+import androidx.annotation.RequiresApi
 import com.soshopay.domain.util.Logger
 import java.security.KeyStore
 import java.security.SecureRandom
@@ -118,6 +119,7 @@ class AndroidKeystoreHelper {
      *
      * @return true if successful, false if StrongBox is unavailable
      */
+    @RequiresApi(Build.VERSION_CODES.P)
     private fun tryCreateKeyWithStrongBox(): Boolean =
         try {
             keyCreationAttempts++
