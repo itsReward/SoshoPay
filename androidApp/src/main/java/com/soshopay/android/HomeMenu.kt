@@ -70,6 +70,8 @@ import com.soshopay.android.ui.component.navigation.notifications
 import com.soshopay.android.ui.component.navigation.onPop
 import com.soshopay.android.ui.component.navigation.userLoansNavGraph
 import com.soshopay.android.ui.theme.SoshoPayTheme
+import navigateToCashLoanApplication
+import navigateToPayGoApplication
 import androidx.compose.material3.MaterialTheme as MaterialTheme1
 
 @Composable
@@ -100,6 +102,8 @@ fun HomeMenu() {
                 loans(
                     navigateToLoansDetails = { navController.navigateToLoanDetails() },
                     navigateToPayments = { navController.navigateToPaymentsList() },
+                    navigateToPayGoApplication = { navController.navigateToLoanApplication() },
+                    navigateToCashLoanApplication = { navController.navigateToLoanApplication() },
                     onPop = { navController.onPop() },
                 )
 
@@ -115,8 +119,9 @@ fun HomeMenu() {
                 admin(onPop = { navController.onPop() })
                 userLoansNavGraph(
                     navigateToLoanDetails = { navController.navigateToLoanDetails() },
-                    navigateToLoanApplication = { navController.navigateToLoanApplication() },
+                    navigateToCashLoanApplication = { navController.navigateToCashLoanApplication() },
                     navigateToPayments = { navController.navigateToPaymentsList() },
+                    navigateToPayGoApplication = { navController.navigateToPayGoApplication() },
                     onPop = { navController.onPop() },
                 )
                 loanApplicationNavGraph(navController)

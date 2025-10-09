@@ -66,13 +66,15 @@ fun NavGraphBuilder.home(
 
 fun NavGraphBuilder.loans(
     navigateToLoansDetails: () -> Unit,
+    navigateToPayGoApplication: () -> Unit,
+    navigateToCashLoanApplication: () -> Unit,
     navigateToPayments: () -> Unit,
     onPop: () -> Unit,
 ) {
     composable(HomeNavigationRoutes.LoansList.name) {
         LoanDashboardScreen(
-            navigateToLoansDetails,
-            navigateToPayments,
+            navigateToCashLoanApplication,
+            navigateToPayGoApplication,
             navigateToPayments,
             navigateToPayments,
             navigateToPayments,
@@ -122,7 +124,8 @@ fun NavGraphBuilder.admin(onPop: () -> Unit) {
 
 fun NavGraphBuilder.userLoansNavGraph(
     navigateToLoanDetails: () -> Unit,
-    navigateToLoanApplication: () -> Unit,
+    navigateToCashLoanApplication: () -> Unit,
+    navigateToPayGoApplication: () -> Unit,
     navigateToPayments: () -> Unit,
     onPop: () -> Unit,
 ) {
@@ -130,7 +133,13 @@ fun NavGraphBuilder.userLoansNavGraph(
         route = "LoanDetailsRoot",
         startDestination = HomeNavigationRoutes.LoansList.name,
     ) {
-        loans(navigateToLoanDetails, navigateToPayments, onPop)
+        loans(
+            navigateToLoansDetails = navigateToLoanDetails,
+            navigateToPayGoApplication = navigateToPayGoApplication,
+            navigateToCashLoanApplication = navigateToCashLoanApplication,
+            onPop = onPop,
+            navigateToPayments = navigateToPayments,
+        )
         loanDetails(onPop)
     }
 }

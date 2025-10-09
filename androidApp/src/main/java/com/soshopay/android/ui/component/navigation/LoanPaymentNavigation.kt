@@ -1,3 +1,5 @@
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
@@ -7,6 +9,17 @@ import com.soshopay.android.ui.component.loans.CashLoanApplicationScreen
 import com.soshopay.android.ui.component.loans.LoanDashboardScreen
 import com.soshopay.android.ui.component.payments.PaymentDashboardScreen
 import com.soshopay.domain.model.Loan
+
+enum class LoanPaymentRoutes {
+    LoanDashboard,
+    CashLoanApplication,
+    PayGoApplication,
+    LoanHistory,
+    LoanDetails,
+    PaymentDashboard,
+    PaymentProcessing,
+    PaymentHistory,
+}
 
 /**
  * PayGo Application destination
@@ -23,8 +36,19 @@ fun NavGraphBuilder.payGoApplicationDestination(
 }
 
 /*
-* CashLoan Application Destina
+* CashLoan Application Destination
 */
+fun NavGraphBuilder.cashLoanApplicationDestination(
+    onNavigateToLoanHistory: () -> Unit,
+    onNavigateBack: () -> Unit,
+) {
+    composable(route = LoanPaymentRoutes.CashLoanApplication.name) {
+        CashLoanApplicationScreen(
+            onNavigateToLoanHistory = onNavigateToLoanHistory,
+            onNavigateBack = onNavigateBack,
+        )
+    }
+}
 
 /**
  * Loan History destination
@@ -135,17 +159,6 @@ fun NavController.navigateToPaymentHistory() {
     navigate(LoanPaymentRoutes.PaymentHistory.name)
 }
 
-enum class LoanPaymentRoutes {
-    LoanDashboard,
-    CashLoanApplication,
-    PayGoApplication,
-    LoanHistory,
-    LoanDetails,
-    PaymentDashboard,
-    PaymentProcessing,
-    PaymentHistory,
-}
-
 /**
  * Loan Dashboard destination
  */
@@ -163,21 +176,6 @@ fun NavGraphBuilder.loanDashboardDestination(
             onNavigateToLoanHistory = onNavigateToLoanHistory,
             onNavigateToPayments = onNavigateToPayments,
             onNavigateToProfile = onNavigateToProfile,
-        )
-    }
-}
-
-/**
- * Cash Loan Application destination
- */
-fun NavGraphBuilder.cashLoanApplicationDestination(
-    onNavigateToLoanHistory: () -> Unit,
-    onNavigateBack: () -> Unit,
-) {
-    composable(LoanPaymentRoutes.CashLoanApplication.name) {
-        CashLoanApplicationScreen(
-            onNavigateToLoanHistory = onNavigateToLoanHistory,
-            onNavigateBack = onNavigateBack,
         )
     }
 }
