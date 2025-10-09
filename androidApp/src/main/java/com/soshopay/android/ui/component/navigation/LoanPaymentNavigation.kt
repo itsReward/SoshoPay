@@ -13,7 +13,7 @@ import com.soshopay.domain.model.Loan
  */
 fun NavGraphBuilder.payGoApplicationDestination(
     onNavigateToLoanHistory: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     composable(LoanPaymentRoutes.PayGoApplication.name) {
         // PayGoApplicationScreen will be implemented next
@@ -22,12 +22,16 @@ fun NavGraphBuilder.payGoApplicationDestination(
     }
 }
 
+/*
+* CashLoan Application Destina
+*/
+
 /**
  * Loan History destination
  */
 fun NavGraphBuilder.loanHistoryDestination(
     onNavigateToLoanDetails: (String) -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     composable(LoanPaymentRoutes.LoanHistory.name) {
         // LoanHistoryScreen will be implemented next
@@ -41,13 +45,14 @@ fun NavGraphBuilder.loanHistoryDestination(
  */
 fun NavGraphBuilder.loanDetailsDestination(
     onNavigateToPayment: (Loan) -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     composable(
         route = "${LoanPaymentRoutes.LoanDetails.name}/{loanId}",
-        arguments = listOf(
-            navArgument("loanId") { type = NavType.StringType }
-        )
+        arguments =
+            listOf(
+                navArgument("loanId") { type = NavType.StringType },
+            ),
     ) { backStackEntry ->
         val loanId = backStackEntry.arguments?.getString("loanId") ?: ""
         // LoanDetailsScreen will be implemented next
@@ -61,12 +66,12 @@ fun NavGraphBuilder.loanDetailsDestination(
  */
 fun NavGraphBuilder.paymentDashboardDestination(
     onNavigateToPaymentProcessing: (Loan) -> Unit,
-    onNavigateToPaymentHistory: () -> Unit
+    onNavigateToPaymentHistory: () -> Unit,
 ) {
     composable(LoanPaymentRoutes.PaymentDashboard.name) {
         PaymentDashboardScreen(
             onNavigateToPaymentProcessing = onNavigateToPaymentProcessing,
-            onNavigateToPaymentHistory = onNavigateToPaymentHistory
+            onNavigateToPaymentHistory = onNavigateToPaymentHistory,
         )
     }
 }
@@ -76,7 +81,7 @@ fun NavGraphBuilder.paymentDashboardDestination(
  */
 fun NavGraphBuilder.paymentProcessingDestination(
     onNavigateBack: () -> Unit,
-    onNavigateToPaymentHistory: () -> Unit
+    onNavigateToPaymentHistory: () -> Unit,
 ) {
     composable(LoanPaymentRoutes.PaymentProcessing.name) {
         // PaymentProcessingScreen will be implemented next
@@ -88,9 +93,7 @@ fun NavGraphBuilder.paymentProcessingDestination(
 /**
  * Payment History destination
  */
-fun NavGraphBuilder.paymentHistoryDestination(
-    onNavigateBack: () -> Unit
-) {
+fun NavGraphBuilder.paymentHistoryDestination(onNavigateBack: () -> Unit) {
     composable(LoanPaymentRoutes.PaymentHistory.name) {
         // PaymentHistoryScreen will be implemented next
         // For now, navigate back
@@ -132,7 +135,6 @@ fun NavController.navigateToPaymentHistory() {
     navigate(LoanPaymentRoutes.PaymentHistory.name)
 }
 
-
 enum class LoanPaymentRoutes {
     LoanDashboard,
     CashLoanApplication,
@@ -152,7 +154,7 @@ fun NavGraphBuilder.loanDashboardDestination(
     onNavigateToPayGo: () -> Unit,
     onNavigateToLoanHistory: () -> Unit,
     onNavigateToPayments: () -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit,
 ) {
     composable(LoanPaymentRoutes.LoanDashboard.name) {
         LoanDashboardScreen(
@@ -160,7 +162,7 @@ fun NavGraphBuilder.loanDashboardDestination(
             onNavigateToPayGo = onNavigateToPayGo,
             onNavigateToLoanHistory = onNavigateToLoanHistory,
             onNavigateToPayments = onNavigateToPayments,
-            onNavigateToProfile = onNavigateToProfile
+            onNavigateToProfile = onNavigateToProfile,
         )
     }
 }
@@ -170,12 +172,12 @@ fun NavGraphBuilder.loanDashboardDestination(
  */
 fun NavGraphBuilder.cashLoanApplicationDestination(
     onNavigateToLoanHistory: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
 ) {
     composable(LoanPaymentRoutes.CashLoanApplication.name) {
         CashLoanApplicationScreen(
             onNavigateToLoanHistory = onNavigateToLoanHistory,
-            onNavigateBack = onNavigateBack
+            onNavigateBack = onNavigateBack,
         )
     }
 }
