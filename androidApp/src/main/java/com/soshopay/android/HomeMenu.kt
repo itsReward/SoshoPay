@@ -1,5 +1,6 @@
 package com.iotapp.uiplayground
 
+import android.graphics.drawable.Icon
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +22,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person2
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -56,24 +59,46 @@ import com.soshopay.android.ui.component.navigation.home
 import com.soshopay.android.ui.component.navigation.loanApplicationNavGraph
 import com.soshopay.android.ui.component.navigation.loanCalculator
 import com.soshopay.android.ui.component.navigation.loanCalculatorNavGraph
+import com.soshopay.android.ui.component.navigation.loanPaymentNavGraph
 import com.soshopay.android.ui.component.navigation.loanPayments
 import com.soshopay.android.ui.component.navigation.loans
 import com.soshopay.android.ui.component.navigation.navigateToAdmin
+import com.soshopay.android.ui.component.navigation.navigateToCashLoanApplication
 import com.soshopay.android.ui.component.navigation.navigateToCashLoanCalculator
 import com.soshopay.android.ui.component.navigation.navigateToDeviceLoanCalculator
 import com.soshopay.android.ui.component.navigation.navigateToLoanApplication
+import com.soshopay.android.ui.component.navigation.navigateToLoanDashboard
 import com.soshopay.android.ui.component.navigation.navigateToLoanDetails
 import com.soshopay.android.ui.component.navigation.navigateToLoansList
 import com.soshopay.android.ui.component.navigation.navigateToNotifications
+import com.soshopay.android.ui.component.navigation.navigateToPayGoApplication
 import com.soshopay.android.ui.component.navigation.navigateToPaymentsList
 import com.soshopay.android.ui.component.navigation.notifications
 import com.soshopay.android.ui.component.navigation.onPop
 import com.soshopay.android.ui.component.navigation.userLoansNavGraph
 import com.soshopay.android.ui.theme.SoshoPayTheme
-import navigateToCashLoanApplication
-import navigateToPayGoApplication
 import androidx.compose.material3.MaterialTheme as MaterialTheme1
 
+/**
+ * HomeMenu - Main Navigation Container
+ *
+ * This composable serves as the main navigation container for the application
+ * after user authentication. It sets up the NavHost and defines all navigation
+ * graphs and destinations.
+ *
+ * Following SOLID Principles:
+ * - Single Responsibility: Manages navigation setup and routing
+ * - Open/Closed: New navigation destinations can be added without modifying existing code
+ * - Dependency Inversion: Depends on navigation abstractions (NavController extensions)
+ *
+ * Navigation Structure:
+ * - Home (Main Dashboard)
+ * - Loan Payment Nav Graph (New - handles all loan operations including Cash Loan)
+ * - User Loans Nav Graph (handles loan details)
+ * - Loan Application Nav Graph
+ * - Loan Calculator Nav Graph
+ * - Other destinations (Payments, Notifications, Admin)
+ */
 @Composable
 fun HomeMenu() {
     val navController = rememberNavController()
@@ -89,8 +114,9 @@ fun HomeMenu() {
         ) { innerPadding ->
 
             NavHost(navController, startDestination = HomeNavigationRoutes.Home.name, modifier = Modifier.padding(innerPadding)) {
+                // Home destination - Main dashboard
                 home(
-                    navigateToLoansList = { navController.navigateToLoansList() },
+                    navigateToLoansList = { navController.navigateToLoanDashboard() },
                     navigateToLoanApplication = { navController.navigateToLoanApplication() },
                     navigateToPaymentsList = { navController.navigateToPaymentsList() },
                     navigateToDeviceLoanCalculator = { navController.navigateToDeviceLoanCalculator() },
@@ -107,16 +133,42 @@ fun HomeMenu() {
                     onPop = { navController.onPop() },
                 )
 
+                // Loan Payment Navigation Graph - NEW
+                // This handles all loan operations including Cash Loan Application
+                loanPaymentNavGraph(navController)
+
+                // Existing loans destination (can be deprecated in favor of loanPaymentNavGraph)
+                loans(
+                    navigateToLoansDetails = { navController.navigateToLoanDetails() },
+                    navigateToPayments = { navController.navigateToPaymentsList() },
+                    navigateToPayGoApplication = { navController.navigateToPayGoApplication() },
+                    navigateToCashLoanApplication = { navController.navigateToCashLoanApplication() },
+                    onPop = { navController.onPop() },
+                )
+
+                // Loan Payments
                 loanPayments(
                     onPop = { navController.onPop() },
                 )
+
+                // Loan Calculator
                 loanCalculator(
                     "",
                     navigateToLoanApplication = { navController.navigateToLoanApplication() },
                     onPop = { navController.onPop() },
                 )
-                notifications(onPop = { navController.onPop() })
-                admin(onPop = { navController.onPop() })
+
+                // Notifications
+                notifications(
+                    onPop = { navController.onPop() },
+                )
+
+                // Admin/Settings
+                admin(
+                    onPop = { navController.onPop() },
+                )
+
+                // User Loans Navigation Graph
                 userLoansNavGraph(
                     navigateToLoanDetails = { navController.navigateToLoanDetails() },
                     navigateToCashLoanApplication = { navController.navigateToCashLoanApplication() },
@@ -124,7 +176,11 @@ fun HomeMenu() {
                     navigateToPayGoApplication = { navController.navigateToPayGoApplication() },
                     onPop = { navController.onPop() },
                 )
+
+                // Loan Application Navigation Graph
                 loanApplicationNavGraph(navController)
+
+                // Loan Calculator Navigation Graph
                 loanCalculatorNavGraph(
                     "",
                     navigateToLoanApplication = { navController.navigateToLoanApplication() },
@@ -196,7 +252,7 @@ fun HomeMenu(
                 }
             }
         }
-        item { MenuCard("Running Loans", R.drawable.real_estate_agent, navigateToLoansList, isDarkMode) }
+        item { MenuCard("Loans", R.drawable.real_estate_agent, navigateToLoansList, isDarkMode) }
         item { MenuCard("Payments", R.drawable.payments, navigateToPaymentsList, isDarkMode) }
         item { MenuCard("Loan Calculator", R.drawable.calculate, { showDialog = !showDialog }, isDarkMode) }
         item { MenuCard("Your Notices", R.drawable.notifications, navigateToNotifications, isDarkMode) }
@@ -204,6 +260,7 @@ fun HomeMenu(
         item {
             WhatsAppMenuCard("Chat With Us", {}, isDarkMode)
         }
+        item { MenuCard("Profile", R.drawable.admin_panel_settings, {}, isDarkMode) }
     }
 }
 

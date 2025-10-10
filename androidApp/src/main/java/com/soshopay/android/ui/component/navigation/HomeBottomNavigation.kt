@@ -17,6 +17,10 @@ import com.soshopay.android.ui.component.loans.LoanDetails
 import com.soshopay.android.ui.component.notifications.Notifications
 import com.soshopay.android.ui.component.payments.LoanPayments
 
+/**
+ * Home Navigation Routes
+ * Defines primary navigation destinations in the home screen
+ */
 enum class HomeNavigationRoutes {
     Home,
     Calculators,
@@ -28,20 +32,37 @@ enum class HomeNavigationRoutes {
     LoanCalculatorGraph,
 }
 
+/**
+ * Loan Details Navigation
+ */
 enum class LoanDetails {
     LoanDetails,
 }
 
+/**
+ * Loan Application Routes
+ */
 enum class LoanApplicationRoutes {
     LoanApplication,
     CashLoanApplication,
     PayGoApplication,
 }
 
+/**
+ * Loan Calculator Routes
+ */
 enum class LoanCalculatorRoutes {
     LoanCalculator,
 }
 
+// ============================================================================
+// HOME DESTINATION - Entry point for the application after authentication
+// ============================================================================
+
+/**
+ * Home Destination
+ * Main entry point after user authentication
+ */
 fun NavGraphBuilder.home(
     navigateToLoansList: () -> Unit,
     navigateToLoanApplication: () -> Unit,
@@ -64,6 +85,14 @@ fun NavGraphBuilder.home(
     }
 }
 
+// ============================================================================
+// LOAN DESTINATIONS
+// ============================================================================
+
+/**
+ * Loans Destination
+ * Displays loan dashboard with options for cash loans and PayGo
+ */
 fun NavGraphBuilder.loans(
     navigateToLoansDetails: () -> Unit,
     navigateToPayGoApplication: () -> Unit,
@@ -73,15 +102,19 @@ fun NavGraphBuilder.loans(
 ) {
     composable(HomeNavigationRoutes.LoansList.name) {
         LoanDashboardScreen(
-            navigateToCashLoanApplication,
-            navigateToPayGoApplication,
-            navigateToPayments,
-            navigateToPayments,
-            navigateToPayments,
+            onNavigateToCashLoan = navigateToCashLoanApplication,
+            onNavigateToPayGo = navigateToPayGoApplication,
+            onNavigateToLoanHistory = navigateToPayments,
+            onNavigateToPayments = navigateToPayments,
+            onNavigateToProfile = navigateToPayments,
         )
     }
 }
 
+/**
+ * Loan Applications Destination
+ * Handles loan application screens
+ */
 fun NavGraphBuilder.loanApplications(
     navigateToLoanHistory: () -> Unit,
     onPop: () -> Unit,
@@ -94,34 +127,24 @@ fun NavGraphBuilder.loanApplications(
     }
 }
 
-fun NavGraphBuilder.calculator(
-    navigateToDeviceLoanCalculator: () -> Unit,
-    navigateToCashLoanCalculator: () -> Unit,
-    onPop: () -> Unit,
-) {
-    composable(HomeNavigationRoutes.Calculators.name) {
-        LoanCalculatorMenu(navigateToDeviceLoanCalculator, navigateToCashLoanCalculator, onPop)
+/**
+ * Loan Details Destination
+ * Shows detailed information about a specific loan
+ */
+fun NavGraphBuilder.loanDetails(onPop: () -> Unit) {
+    composable(LoanDetails.LoanDetails.name) {
+        LoanDetails(onPop)
     }
 }
 
-fun NavGraphBuilder.loanPayments(onPop: () -> Unit) {
-    composable(HomeNavigationRoutes.LoanPayments.name) {
-        LoanPayments(onPop)
-    }
-}
+// ============================================================================
+// USER LOANS NAVIGATION GRAPH
+// ============================================================================
 
-fun NavGraphBuilder.notifications(onPop: () -> Unit) {
-    composable(HomeNavigationRoutes.Alerts.name) {
-        Notifications(onPop)
-    }
-}
-
-fun NavGraphBuilder.admin(onPop: () -> Unit) {
-    composable(HomeNavigationRoutes.Admin.name) {
-        Settings(onPop)
-    }
-}
-
+/**
+ * User Loans Navigation Graph
+ * Handles all loan-related navigation within a nested graph
+ */
 fun NavGraphBuilder.userLoansNavGraph(
     navigateToLoanDetails: () -> Unit,
     navigateToCashLoanApplication: () -> Unit,
@@ -144,71 +167,28 @@ fun NavGraphBuilder.userLoansNavGraph(
     }
 }
 
-fun NavGraphBuilder.loanDetails(onPop: () -> Unit) {
-    composable(LoanDetails.LoanDetails.name) {
-        LoanDetails(onPop)
+// ============================================================================
+// CALCULATOR DESTINATIONS
+// ============================================================================
+
+/**
+ * Calculator Menu Destination
+ * Entry point for loan calculators
+ */
+fun NavGraphBuilder.calculator(
+    navigateToDeviceLoanCalculator: () -> Unit,
+    navigateToCashLoanCalculator: () -> Unit,
+    onPop: () -> Unit,
+) {
+    composable(HomeNavigationRoutes.Calculators.name) {
+        LoanCalculatorMenu(navigateToDeviceLoanCalculator, navigateToCashLoanCalculator, onPop)
     }
 }
 
-fun NavController.navigateToLoansList() {
-    navigate(HomeNavigationRoutes.LoansList.name)
-}
-
-fun NavController.navigateToPaymentsList() {
-    navigate(HomeNavigationRoutes.LoanPayments.name)
-}
-
-fun NavController.navigateToLoanDetails() {
-    navigate(LoanApplicationRoutes.CashLoanApplication.name)
-}
-
-fun NavController.navigateToNotifications() {
-    navigate(HomeNavigationRoutes.Alerts.name)
-}
-
-fun NavController.navigateToAdmin() {
-    navigate(HomeNavigationRoutes.Admin.name)
-}
-
-fun NavController.onPop() {
-    popBackStack()
-}
-
-/*
-*
-*
-*  LOAN APPLICATION
-*
-*
-* */
-fun NavGraphBuilder.loanApplicationNavGraph(navController: NavController) {
-    navigation(
-        route = "LoanApplicationRoot",
-        startDestination = HomeNavigationRoutes.LoanApplicationGraph.name,
-    ) {
-        loanApplication(navController)
-    }
-}
-
-fun NavGraphBuilder.loanApplication(navController: NavController) {
-    composable(
-        LoanApplicationRoutes.LoanApplication.name,
-    ) {
-        LoanApplication { navController.popBackStack() }
-    }
-}
-
-fun NavController.navigateToLoanApplication() {
-    navigate(LoanApplicationRoutes.LoanApplication.name)
-}
-
-/*
-*
-*
-*   Loan Calculator
-*
-* */
-
+/**
+ * Loan Calculator Navigation Graph
+ * Handles calculator-specific navigation
+ */
 fun NavGraphBuilder.loanCalculatorNavGraph(
     calculatorType: String,
     navigateToLoanApplication: () -> Unit,
@@ -222,6 +202,10 @@ fun NavGraphBuilder.loanCalculatorNavGraph(
     }
 }
 
+/**
+ * Loan Calculator Destination
+ * Displays specific loan calculator (Cash or Device)
+ */
 fun NavGraphBuilder.loanCalculator(
     calculator: String,
     navigateToLoanApplication: () -> Unit,
@@ -239,10 +223,128 @@ fun NavGraphBuilder.loanCalculator(
     }
 }
 
+// ============================================================================
+// LOAN APPLICATION NAVIGATION GRAPH
+// ============================================================================
+
+/**
+ * Loan Application Navigation Graph
+ * Handles loan application flow
+ */
+fun NavGraphBuilder.loanApplicationNavGraph(navController: NavController) {
+    navigation(
+        route = "LoanApplicationRoot",
+        startDestination = HomeNavigationRoutes.LoanApplicationGraph.name,
+    ) {
+        loanApplication(navController)
+    }
+}
+
+/**
+ * Loan Application Destination
+ */
+fun NavGraphBuilder.loanApplication(navController: NavController) {
+    composable(
+        LoanApplicationRoutes.LoanApplication.name,
+    ) {
+        LoanApplication { navController.popBackStack() }
+    }
+}
+
+// ============================================================================
+// OTHER DESTINATIONS
+// ============================================================================
+
+/**
+ * Loan Payments Destination
+ */
+fun NavGraphBuilder.loanPayments(onPop: () -> Unit) {
+    composable(HomeNavigationRoutes.LoanPayments.name) {
+        LoanPayments(onPop)
+    }
+}
+
+/**
+ * Notifications Destination
+ */
+fun NavGraphBuilder.notifications(onPop: () -> Unit) {
+    composable(HomeNavigationRoutes.Alerts.name) {
+        Notifications(onPop)
+    }
+}
+
+/**
+ * Admin/Settings Destination
+ */
+fun NavGraphBuilder.admin(onPop: () -> Unit) {
+    composable(HomeNavigationRoutes.Admin.name) {
+        Settings(onPop)
+    }
+}
+
+// ============================================================================
+// NAVIGATION EXTENSION FUNCTIONS - NavController Extensions
+// ============================================================================
+
+/**
+ * Navigate to Loans List
+ */
+fun NavController.navigateToLoansList() {
+    navigate(HomeNavigationRoutes.LoansList.name)
+}
+
+/**
+ * Navigate to Payments List
+ */
+fun NavController.navigateToPaymentsList() {
+    navigate(HomeNavigationRoutes.LoanPayments.name)
+}
+
+/**
+ * Navigate to Loan Details
+ */
+fun NavController.navigateToLoanDetails() {
+    navigate(LoanApplicationRoutes.CashLoanApplication.name)
+}
+
+/**
+ * Navigate to Notifications
+ */
+fun NavController.navigateToNotifications() {
+    navigate(HomeNavigationRoutes.Alerts.name)
+}
+
+/**
+ * Navigate to Admin
+ */
+fun NavController.navigateToAdmin() {
+    navigate(HomeNavigationRoutes.Admin.name)
+}
+
+/**
+ * Navigate to Loan Application
+ */
+fun NavController.navigateToLoanApplication() {
+    navigate(LoanApplicationRoutes.LoanApplication.name)
+}
+
+/**
+ * Navigate to Device Loan Calculator
+ */
 fun NavController.navigateToDeviceLoanCalculator() {
     navigate(LoanCalculatorRoutes.LoanCalculator.name + "/Device")
 }
 
+/**
+ * Navigate to Cash Loan Calculator
+ */
 fun NavController.navigateToCashLoanCalculator() {
     navigate(LoanCalculatorRoutes.LoanCalculator.name + "/Cash")
+}
+
+/**
+ * Pop back stack
+ */
+fun NavController.onPop() {
+    popBackStack()
 }

@@ -112,7 +112,7 @@ fun CashLoanApplicationScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(if (isDarkMode) MaterialTheme.colorScheme.background else Color.White),
+                    .background(if (isDarkMode) MaterialTheme.colorScheme.secondary else Color.White),
         ) {
             // Top Bar
             Row(
@@ -247,9 +247,9 @@ private fun ApplicationFormCard(
         shape = RoundedCornerShape(16.dp),
         colors =
             CardDefaults.cardColors(
-                containerColor = if (isDarkMode) MaterialTheme.colorScheme.surface else Color.White,
+                containerColor = Color.Transparent,
             ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
