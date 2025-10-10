@@ -36,6 +36,7 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.androidx.compose.material)
             implementation(libs.compose.material.icons.extended)
+            implementation(libs.coil.compose)
         }
     }
 }

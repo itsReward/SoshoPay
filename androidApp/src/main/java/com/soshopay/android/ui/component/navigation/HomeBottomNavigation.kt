@@ -16,6 +16,7 @@ import com.soshopay.android.ui.component.loans.LoanDashboardScreen
 import com.soshopay.android.ui.component.loans.LoanDetails
 import com.soshopay.android.ui.component.notifications.Notifications
 import com.soshopay.android.ui.component.payments.LoanPayments
+import com.soshopay.android.ui.component.profile.ProfileScreen
 
 /**
  * Home Navigation Routes
@@ -30,6 +31,7 @@ enum class HomeNavigationRoutes {
     LoanPayments,
     LoanApplicationGraph,
     LoanCalculatorGraph,
+    Profile,
 }
 
 /**
@@ -71,6 +73,7 @@ fun NavGraphBuilder.home(
     navigateToCashLoanCalculator: () -> Unit,
     navigateToNotifications: () -> Unit,
     navigateToAdmin: () -> Unit,
+    navigateToProfile: () -> Unit,
 ) {
     composable(AuthNavigationRoutes.Home.name) {
         HomeMenu(
@@ -81,6 +84,7 @@ fun NavGraphBuilder.home(
             navigateToCashLoanCalculator,
             navigateToNotifications,
             navigateToAdmin,
+            navigateToProfile,
         )
     }
 }
@@ -252,6 +256,25 @@ fun NavGraphBuilder.loanApplication(navController: NavController) {
 }
 
 // ============================================================================
+// PROFILE DESTINATION - Add this function
+// ============================================================================
+
+/**
+ * Profile Destination
+ */
+fun NavGraphBuilder.profile(
+    onPop: () -> Unit,
+    onNavigateToLogin: () -> Unit,
+) {
+    composable(HomeNavigationRoutes.Profile.name) {
+        ProfileScreen(
+            onNavigateBack = onPop,
+            onNavigateToLogin = onNavigateToLogin,
+        )
+    }
+}
+
+// ============================================================================
 // OTHER DESTINATIONS
 // ============================================================================
 
@@ -285,6 +308,13 @@ fun NavGraphBuilder.admin(onPop: () -> Unit) {
 // ============================================================================
 // NAVIGATION EXTENSION FUNCTIONS - NavController Extensions
 // ============================================================================
+
+/**
+ * Navigate to Profile
+ */
+fun NavController.navigateToProfile() {
+    navigate(HomeNavigationRoutes.Profile.name)
+}
 
 /**
  * Navigate to Loans List

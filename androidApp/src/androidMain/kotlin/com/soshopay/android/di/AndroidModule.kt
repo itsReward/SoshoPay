@@ -3,6 +3,7 @@ package com.soshopay.android.di
 import com.soshopay.android.ui.viewmodel.AuthViewModel
 import com.soshopay.android.ui.viewmodel.LoanViewModel
 import com.soshopay.android.ui.viewmodel.PaymentViewModel
+import com.soshopay.android.ui.viewmodel.ProfileViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
@@ -104,6 +105,32 @@ val androidModule =
                 getPaymentStatusUseCase = get(),
                 downloadReceiptUseCase = get(),
                 calculateEarlyPayoffUseCase = get(),
+            )
+        }
+
+        /**
+         * ProfileViewModel for managing profile UI state.
+         *
+         * Dependencies:
+         * - GetUserProfileUseCase: For retrieving user profile
+         * - UpdatePersonalDetailsUseCase: For updating personal details
+         * - UpdateAddressUseCase: For updating address
+         * - ManageNextOfKinUseCase: For managing next of kin
+         * - UploadProfilePictureUseCase: For uploading profile picture
+         * - UploadDocumentUseCase: For uploading documents
+         * - ManageClientTypeUseCase: For managing client type
+         * - LogoutUseCase: For logout
+         */
+        viewModel {
+            ProfileViewModel(
+                getUserProfileUseCase = get(),
+                updatePersonalDetailsUseCase = get(),
+                updateAddressUseCase = get(),
+                manageNextOfKinUseCase = get(),
+                uploadProfilePictureUseCase = get(),
+                uploadDocumentUseCase = get(),
+                manageClientTypeUseCase = get(),
+                logoutUseCase = get(),
             )
         }
     }

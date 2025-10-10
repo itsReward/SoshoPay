@@ -20,6 +20,7 @@ compose = "1.9.0"
 compose-material3= "1.5.0-alpha03"
 compose-plugin = "1.8.2"
 compose-compiler = "1.5.14"
+coil-compose="2.4.0"
 
 junit = "4.13.2"
 kotlin = "2.2.10"
@@ -59,6 +60,7 @@ compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview"
 compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "compose" }
 compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "compose-material3" }
 navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation-compose" }
+coil-compose = {module = "io.coil-kt:coil-compose", version.ref = "coil-compose"}
 
 # Kotlin Multiplatform
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }

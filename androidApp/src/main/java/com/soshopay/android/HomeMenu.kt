@@ -73,6 +73,7 @@ import com.soshopay.android.ui.component.navigation.navigateToLoansList
 import com.soshopay.android.ui.component.navigation.navigateToNotifications
 import com.soshopay.android.ui.component.navigation.navigateToPayGoApplication
 import com.soshopay.android.ui.component.navigation.navigateToPaymentsList
+import com.soshopay.android.ui.component.navigation.navigateToProfile
 import com.soshopay.android.ui.component.navigation.notifications
 import com.soshopay.android.ui.component.navigation.onPop
 import com.soshopay.android.ui.component.navigation.userLoansNavGraph
@@ -123,6 +124,7 @@ fun HomeMenu() {
                     navigateToCashLoanCalculator = { navController.navigateToCashLoanCalculator() },
                     navigateToNotifications = { navController.navigateToNotifications() },
                     navigateToAdmin = { navController.navigateToAdmin() },
+                    navigateToProfile = { navController.navigateToProfile() },
                 )
 
                 loans(
@@ -200,6 +202,7 @@ fun HomeMenu(
     navigateToCashLoanCalculator: () -> Unit,
     navigateToNotifications: () -> Unit,
     navigateToAdmin: () -> Unit,
+    navigateToProfile: () -> Unit,
 ) {
     val isDarkMode = isSystemInDarkTheme()
     var showDialog by remember { mutableStateOf(false) }
@@ -260,7 +263,7 @@ fun HomeMenu(
         item {
             WhatsAppMenuCard("Chat With Us", {}, isDarkMode)
         }
-        item { MenuCard("Profile", R.drawable.admin_panel_settings, {}, isDarkMode) }
+        item { MenuCard("Profile", R.drawable.admin_panel_settings, navigateToProfile, isDarkMode) }
     }
 }
 
