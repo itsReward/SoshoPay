@@ -53,6 +53,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.soshopay.android.R
+import com.soshopay.android.ui.component.navigation.AuthNavigationRoutes
 import com.soshopay.android.ui.component.navigation.HomeNavigationRoutes
 import com.soshopay.android.ui.component.navigation.admin
 import com.soshopay.android.ui.component.navigation.home
@@ -76,6 +77,7 @@ import com.soshopay.android.ui.component.navigation.navigateToPaymentsList
 import com.soshopay.android.ui.component.navigation.navigateToProfile
 import com.soshopay.android.ui.component.navigation.notifications
 import com.soshopay.android.ui.component.navigation.onPop
+import com.soshopay.android.ui.component.navigation.profile
 import com.soshopay.android.ui.component.navigation.userLoansNavGraph
 import com.soshopay.android.ui.theme.SoshoPayTheme
 import androidx.compose.material3.MaterialTheme as MaterialTheme1
@@ -168,6 +170,16 @@ fun HomeMenu() {
                 // Admin/Settings
                 admin(
                     onPop = { navController.onPop() },
+                )
+
+                // Loan
+                profile(
+                    onPop = { navController.onPop() },
+                    onNavigateToLogin = {
+                        navController.navigate(AuthNavigationRoutes.Login.name) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
                 )
 
                 // User Loans Navigation Graph
