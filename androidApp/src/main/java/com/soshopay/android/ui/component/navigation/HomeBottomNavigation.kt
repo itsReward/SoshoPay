@@ -16,6 +16,7 @@ import com.soshopay.android.ui.component.loans.LoanDashboardScreen
 import com.soshopay.android.ui.component.loans.LoanDetails
 import com.soshopay.android.ui.component.notifications.Notifications
 import com.soshopay.android.ui.component.payments.LoanPayments
+import com.soshopay.android.ui.component.payments.PaymentDashboardScreen
 import com.soshopay.android.ui.component.profile.ProfileScreen
 
 /**
@@ -283,7 +284,10 @@ fun NavGraphBuilder.profile(
  */
 fun NavGraphBuilder.loanPayments(onPop: () -> Unit) {
     composable(HomeNavigationRoutes.LoanPayments.name) {
-        LoanPayments(onPop)
+        PaymentDashboardScreen(
+            onNavigateToPaymentProcessing = { /* Handle payment processing navigation */ },
+            onNavigateToPaymentHistory = { },
+        )
     }
 }
 

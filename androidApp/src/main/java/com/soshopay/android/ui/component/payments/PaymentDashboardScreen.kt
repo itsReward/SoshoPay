@@ -118,7 +118,7 @@ fun PaymentDashboardScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(if (isDarkMode) MaterialTheme.colorScheme.background else Color.White),
+                    .background(if (isDarkMode) MaterialTheme.colorScheme.secondary else Color.White),
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),

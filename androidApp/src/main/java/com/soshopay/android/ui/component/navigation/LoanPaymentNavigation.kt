@@ -10,6 +10,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import com.soshopay.android.ui.component.loans.CashLoanApplicationScreen
 import com.soshopay.android.ui.component.loans.LoanDashboardScreen
+import com.soshopay.android.ui.component.loans.LoanHistoryScreen
 import com.soshopay.android.ui.component.payments.PaymentDashboardScreen
 import com.soshopay.domain.model.Loan
 
@@ -195,16 +196,17 @@ fun NavGraphBuilder.payGoApplicationDestination(
 
 /**
  * Loan History Destination
- * Displays user's loan history
+ * Displays user's loan history with filtering
  */
 fun NavGraphBuilder.loanHistoryDestination(
     onNavigateToLoanDetails: (String) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     composable(LoanPaymentRoutes.LoanHistory.name) {
-        // LoanHistoryScreen will be implemented
-        // For now, navigate back
-        onNavigateBack()
+        LoanHistoryScreen(
+            onNavigateToLoanDetails = onNavigateToLoanDetails,
+            onNavigateBack = onNavigateBack,
+        )
     }
 }
 
