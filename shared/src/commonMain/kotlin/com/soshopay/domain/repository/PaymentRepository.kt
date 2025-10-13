@@ -1,5 +1,6 @@
 package com.soshopay.domain.repository
 
+import com.soshopay.data.remote.PaymentProcessResponse
 import com.soshopay.domain.model.EarlyPayoffCalculation
 import com.soshopay.domain.model.Payment
 import com.soshopay.domain.model.PaymentDashboard
@@ -51,7 +52,7 @@ interface PaymentRepository {
     suspend fun getPaymentMethods(): Result<List<PaymentMethodInfo>>
 
     // ========== PAYMENT PROCESSING ==========
-    suspend fun processPayment(request: PaymentRequest): Result<String>
+    suspend fun processPayment(request: PaymentRequest): Result<PaymentProcessResponse>
 
     suspend fun getPaymentStatus(paymentId: String): Result<PaymentStatus>
 

@@ -139,7 +139,7 @@ fun LoanHistoryScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "Loan History",
+                            text = "Your Loans",
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                         )
                     },

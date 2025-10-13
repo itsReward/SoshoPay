@@ -2,6 +2,7 @@ package com.soshopay.android.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.soshopay.android.ui.state.*
 import com.soshopay.android.ui.state.LoanPaymentEvent
 import com.soshopay.android.ui.state.LoanPaymentNavigation
 import com.soshopay.android.ui.state.PaymentDashboardState
@@ -11,6 +12,7 @@ import com.soshopay.domain.model.Loan
 import com.soshopay.domain.model.PaymentMethodInfo
 import com.soshopay.domain.model.PaymentRequest
 import com.soshopay.domain.model.PaymentStatus
+import com.soshopay.domain.storage.ProfileCache
 import com.soshopay.domain.usecase.payment.CalculateEarlyPayoffUseCase
 import com.soshopay.domain.usecase.payment.DownloadReceiptUseCase
 import com.soshopay.domain.usecase.payment.GetPaymentDashboardUseCase
@@ -19,6 +21,7 @@ import com.soshopay.domain.usecase.payment.GetPaymentMethodsUseCase
 import com.soshopay.domain.usecase.payment.GetPaymentStatusUseCase
 import com.soshopay.domain.usecase.payment.ProcessPaymentUseCase
 import com.soshopay.domain.util.SoshoPayException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -55,6 +58,7 @@ class PaymentViewModel(
     private val getPaymentStatusUseCase: GetPaymentStatusUseCase,
     private val downloadReceiptUseCase: DownloadReceiptUseCase,
     private val calculateEarlyPayoffUseCase: CalculateEarlyPayoffUseCase,
+    private val profileCache: ProfileCache,
 ) : ViewModel() {
     // ========== STATE MANAGEMENT ==========
 
@@ -89,6 +93,15 @@ class PaymentViewModel(
             is LoanPaymentEvent.DismissPaymentConfirmation -> dismissPaymentConfirmation()
             is LoanPaymentEvent.ProcessPayment -> processPayment()
             is LoanPaymentEvent.ProcessEarlyPayment -> processEarlyPayment(event.loanId, event.amount)
+
+            is LoanPaymentEvent.ShowPaymentMethodSelection -> showPaymentMethodSelection()
+            is LoanPaymentEvent.DismissPaymentMethodSelection -> dismissPaymentMethodSelection()
+            is LoanPaymentEvent.ConfirmPaymentMethodSelection -> confirmPaymentMethodSelection()
+            is LoanPaymentEvent.ShowPhoneInput -> showPhoneInput()
+            is LoanPaymentEvent.DismissPhoneInput -> dismissPhoneInput()
+            is LoanPaymentEvent.DismissPaymentResult -> dismissPaymentResult()
+            is LoanPaymentEvent.ViewReceipt -> viewReceipt()
+            is LoanPaymentEvent.ReturnToDashboard -> returnToDashboard()
 
             // Payment History Events
             is LoanPaymentEvent.LoadPaymentHistory -> loadPaymentHistory()
@@ -248,7 +261,7 @@ class PaymentViewModel(
             currentState.copy(
                 paymentProcessing = true,
                 errorMessage = null,
-                showPaymentConfirmation = false,
+                showPhoneInputModal = false, // Close phone input modal
             )
 
         viewModelScope.launch {
@@ -256,32 +269,31 @@ class PaymentViewModel(
                 PaymentRequest(
                     loanId = loan.id,
                     amount = currentState.paymentAmount.toDoubleOrNull() ?: 0.0,
-                    paymentMethod = method.name,
+                    paymentMethod = method.id,
                     phoneNumber = currentState.phoneNumber,
-                    customerReference = currentState.customerReference,
+                    customerReference = currentState.customerReference.takeIf { it.isNotBlank() },
                 )
 
-            val result =
-                processPaymentUseCase(
-                    paymentRequest.loanId,
-                    paymentRequest.amount,
-                    paymentRequest.paymentMethod,
-                    paymentRequest.phoneNumber,
-                )
-
-            when (result) {
+            when (
+                val result =
+                    processPaymentUseCase(
+                        paymentRequest.loanId,
+                        paymentRequest.amount,
+                        paymentRequest.paymentMethod,
+                        paymentRequest.phoneNumber,
+                    )
+            ) {
                 is com.soshopay.domain.repository.Result.Success -> {
-                    val paymentId = result.data
-                    // Check payment status
-                    checkPaymentStatus(paymentId)
+                    val paymentResponse = result.data
+                    pollPaymentStatus(paymentResponse.paymentId)
                 }
                 is com.soshopay.domain.repository.Result.Error -> {
                     _paymentProcessingState.value =
-                        currentState.copy(
+                        _paymentProcessingState.value.copy(
                             paymentProcessing = false,
-                            errorMessage = getErrorMessage(result.exception),
+                            showPaymentResultModal = true, // NEW: Show result modal
                             paymentResult =
-                                com.soshopay.android.ui.state.PaymentResult(
+                                PaymentResult(
                                     isSuccessful = false,
                                     transactionId = null,
                                     receiptNumber = null,
@@ -290,9 +302,71 @@ class PaymentViewModel(
                                 ),
                         )
                 }
-                is com.soshopay.domain.repository.Result.Loading -> {
-                    _paymentProcessingState.value = currentState.copy(paymentProcessing = true)
+                is com.soshopay.domain.repository.Result.Loading -> { /* Handle loading */ }
+            }
+        }
+    }
+
+    private suspend fun pollPaymentStatus(paymentId: String) {
+        var attempts = 0
+        val maxAttempts = 10
+
+        while (attempts < maxAttempts) {
+            delay(10000) // 10 seconds
+            attempts++
+
+            val result = getPaymentStatusUseCase(paymentId)
+
+            when (result) {
+                is com.soshopay.domain.repository.Result.Success -> {
+                    val status = result.data
+                    val isSuccessful = status == PaymentStatus.COMPLETED
+
+                    if (status != PaymentStatus.PROCESSING) {
+                        _paymentProcessingState.value =
+                            _paymentProcessingState.value.copy(
+                                paymentProcessing = false,
+                                showPaymentResultModal = true, // NEW: Show result modal
+                                paymentResult =
+                                    com.soshopay.android.ui.state.PaymentResult(
+                                        isSuccessful = isSuccessful,
+                                        transactionId = paymentId,
+                                        receiptNumber = "",
+                                        message =
+                                            if (isSuccessful) {
+                                                "Payment successful! Your payment has been processed."
+                                            } else {
+                                                "Payment failed. Please try again."
+                                            },
+                                        failureReason = if (!isSuccessful) "EcoCash transaction failed" else null,
+                                    ),
+                            )
+
+                        // Refresh dashboard after successful payment
+                        if (isSuccessful) {
+                            loadPaymentDashboard()
+                        }
+
+                        break
+                    }
                 }
+                is com.soshopay.domain.repository.Result.Error -> {
+                    _paymentProcessingState.value =
+                        _paymentProcessingState.value.copy(
+                            paymentProcessing = false,
+                            showPaymentResultModal = true, // NEW: Show result modal
+                            paymentResult =
+                                com.soshopay.android.ui.state.PaymentResult(
+                                    isSuccessful = false,
+                                    transactionId = paymentId,
+                                    receiptNumber = null,
+                                    message = "Unable to verify payment status",
+                                    failureReason = result.exception.message,
+                                ),
+                        )
+                    break
+                }
+                else -> { /* Continue polling */ }
             }
         }
     }
@@ -343,7 +417,7 @@ class PaymentViewModel(
 
                     when (result) {
                         is com.soshopay.domain.repository.Result.Success -> {
-                            checkPaymentStatus(result.data)
+                            checkPaymentStatus(result.data.paymentId)
                         }
                         is com.soshopay.domain.repository.Result.Error -> {
                             _paymentProcessingState.value =
@@ -375,10 +449,99 @@ class PaymentViewModel(
         }
     }
 
-    private suspend fun checkPaymentStatus(paymentId: String) {
-        // Simulate checking payment status (in real app, this might poll the API)
-        kotlinx.coroutines.delay(3000) // Wait 3 seconds for payment processing
+    private fun showPaymentMethodSelection() {
+        _paymentProcessingState.value =
+            _paymentProcessingState.value.copy(
+                showPaymentMethodSelectionModal = true,
+            )
+        loadPaymentMethods()
+    }
 
+    private fun dismissPaymentMethodSelection() {
+        _paymentProcessingState.value =
+            _paymentProcessingState.value.copy(
+                showPaymentMethodSelectionModal = false,
+            )
+    }
+
+    private fun confirmPaymentMethodSelection() {
+        val selectedMethod = _paymentProcessingState.value.selectedPaymentMethod
+
+        if (selectedMethod == null) {
+            _paymentProcessingState.value =
+                _paymentProcessingState.value.copy(
+                    errorMessage = "Please select a payment method",
+                )
+            return
+        }
+
+        // Dismiss method selection and show phone input
+        _paymentProcessingState.value =
+            _paymentProcessingState.value.copy(
+                showPaymentMethodSelectionModal = false,
+                showPhoneInputModal = true,
+            )
+
+        // Pre-populate phone number from ProfileCache
+        prepopulateUserPhoneFromCache()
+    }
+
+    private fun showPhoneInput() {
+        _paymentProcessingState.value =
+            _paymentProcessingState.value.copy(
+                showPhoneInputModal = true,
+            )
+        prepopulateUserPhoneFromCache()
+    }
+
+    private fun dismissPhoneInput() {
+        _paymentProcessingState.value =
+            _paymentProcessingState.value.copy(
+                showPhoneInputModal = false,
+            )
+    }
+
+    private fun dismissPaymentResult() {
+        _paymentProcessingState.value =
+            _paymentProcessingState.value.copy(
+                showPaymentResultModal = false,
+                paymentResult = null,
+            )
+    }
+
+    private fun viewReceipt() {
+        val receiptNumber = _paymentProcessingState.value.paymentResult?.receiptNumber
+        if (receiptNumber != null) {
+            viewModelScope.launch {
+                downloadReceipt(receiptNumber)
+            }
+        }
+        dismissPaymentResult()
+    }
+
+    private fun returnToDashboard() {
+        dismissPaymentResult()
+        viewModelScope.launch {
+            _navigationEvents.emit(LoanPaymentNavigation.ToPaymentDashboard)
+        }
+        // Refresh dashboard
+        loadPaymentDashboard()
+    }
+
+    // NEW: Pre-populate phone from ProfileCache
+    private fun prepopulateUserPhoneFromCache() {
+        viewModelScope.launch {
+            val user = profileCache.getCurrentUser()
+            val phoneNumber = user?.phoneNumber ?: ""
+
+            _paymentProcessingState.value =
+                _paymentProcessingState.value.copy(
+                    phoneNumber = phoneNumber,
+                )
+        }
+    }
+
+    private suspend fun checkPaymentStatus(paymentId: String) {
         val result = getPaymentStatusUseCase(paymentId)
 
         when (result) {

@@ -14,6 +14,7 @@ import com.soshopay.domain.model.Address
 import com.soshopay.domain.model.DocumentType
 import com.soshopay.domain.model.NextOfKin
 import com.soshopay.domain.model.PersonalDetails
+import com.soshopay.domain.storage.ProfileCache
 import com.soshopay.domain.usecase.auth.LogoutUseCase
 import com.soshopay.domain.usecase.profile.GetUserProfileUseCase
 import com.soshopay.domain.usecase.profile.ManageClientTypeUseCase

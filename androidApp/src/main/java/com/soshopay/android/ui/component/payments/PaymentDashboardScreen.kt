@@ -89,6 +89,7 @@ fun PaymentDashboardScreen(
     viewModel: PaymentViewModel = koinViewModel(),
 ) {
     val dashboardState by viewModel.paymentDashboardState.collectAsState()
+    val processingState by viewModel.paymentProcessingState.collectAsState()
     val navigationEvents = viewModel.navigationEvents
 
     // Handle navigation events
@@ -209,9 +210,12 @@ fun PaymentDashboardScreen(
                             PaymentSummaryCard(
                                 paymentSummary = paymentSummary,
                                 onPayClick = {
-                                    // Convert PaymentSummary to Loan for navigation
+                                    // Convert PaymentSummary to Loan for payment processing
                                     val loan = createLoanFromSummary(paymentSummary)
-                                    viewModel.onEvent(LoanPaymentEvent.SelectLoanForPayment(loan))
+                                    // Set the selected loan in the ViewModel
+                                    viewModel.setSelectedLoan(loan)
+                                    // Show payment method selection modal
+                                    viewModel.onEvent(LoanPaymentEvent.ShowPaymentMethodSelection)
                                 },
                             )
                         }
@@ -223,6 +227,61 @@ fun PaymentDashboardScreen(
             PullToRefreshContainer(
                 modifier = Modifier.align(Alignment.TopCenter),
                 state = pullToRefreshState,
+            )
+        }
+
+        // NEW: Payment Method Selection Modal
+        if (processingState.showPaymentMethodSelectionModal) {
+            PaymentMethodSelectionModal(
+                paymentMethods = processingState.paymentMethods,
+                selectedMethod = processingState.selectedPaymentMethod,
+                onMethodSelected = { method ->
+                    viewModel.onEvent(LoanPaymentEvent.SelectPaymentMethod(method))
+                },
+                onDismiss = {
+                    viewModel.onEvent(LoanPaymentEvent.DismissPaymentMethodSelection)
+                },
+                onConfirm = {
+                    viewModel.onEvent(LoanPaymentEvent.ConfirmPaymentMethodSelection)
+                },
+                isDarkMode = isDarkMode,
+            )
+        }
+
+        // NEW: Phone Input Modal
+        if (processingState.showPhoneInputModal) {
+            PhoneInputModal(
+                phoneNumber = processingState.phoneNumber,
+                onPhoneNumberChange = { phone ->
+                    viewModel.onEvent(LoanPaymentEvent.UpdatePhoneNumber(phone))
+                },
+                paymentAmount = processingState.paymentAmount,
+                onPaymentAmountChange = { amount ->
+                    viewModel.onEvent(LoanPaymentEvent.UpdatePaymentAmount(amount))
+                },
+                validationErrors = processingState.validationErrors,
+                onDismiss = {
+                    viewModel.onEvent(LoanPaymentEvent.DismissPhoneInput)
+                },
+                onMakePayment = {
+                    viewModel.onEvent(LoanPaymentEvent.ProcessPayment)
+                },
+                isProcessing = processingState.paymentProcessing,
+                isDarkMode = isDarkMode,
+            )
+        }
+
+        // NEW: Payment Result Modal
+        if (processingState.showPaymentResultModal && processingState.paymentResult != null) {
+            PaymentResultModal(
+                paymentResult = processingState.paymentResult!!,
+                onViewReceipt = {
+                    viewModel.onEvent(LoanPaymentEvent.ViewReceipt)
+                },
+                onReturnToDashboard = {
+                    viewModel.onEvent(LoanPaymentEvent.ReturnToDashboard)
+                },
+                isDarkMode = isDarkMode,
             )
         }
     }

@@ -208,6 +208,9 @@ data class PaymentProcessingState(
     val paymentResult: PaymentResult? = null,
     val isEarlyPayment: Boolean = false,
     val earlyPaymentSavings: Double = 0.0,
+    val showPaymentMethodSelectionModal: Boolean = false,
+    val showPhoneInputModal: Boolean = false,
+    val showPaymentResultModal: Boolean = false,
 ) {
     fun hasErrors(): Boolean = errorMessage != null || validationErrors.isNotEmpty()
 
@@ -411,6 +414,22 @@ sealed class LoanPaymentEvent {
         val loanId: String,
         val amount: Double,
     ) : LoanPaymentEvent()
+
+    object ShowPaymentMethodSelection : LoanPaymentEvent()
+
+    object DismissPaymentMethodSelection : LoanPaymentEvent()
+
+    object ConfirmPaymentMethodSelection : LoanPaymentEvent()
+
+    object ShowPhoneInput : LoanPaymentEvent()
+
+    object DismissPhoneInput : LoanPaymentEvent()
+
+    object DismissPaymentResult : LoanPaymentEvent()
+
+    object ViewReceipt : LoanPaymentEvent()
+
+    object ReturnToDashboard : LoanPaymentEvent()
 
     // Payment History Events
     object LoadPaymentHistory : LoanPaymentEvent()

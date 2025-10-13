@@ -1,5 +1,6 @@
 package com.soshopay.domain.usecase.payment
 
+import com.soshopay.data.remote.PaymentProcessResponse
 import com.soshopay.domain.model.PaymentRequest
 import com.soshopay.domain.repository.PaymentRepository
 import com.soshopay.domain.repository.Result
@@ -13,7 +14,7 @@ class ProcessPaymentUseCase(
         paymentMethod: String,
         phoneNumber: String,
         customerReference: String? = null,
-    ): Result<String> {
+    ): Result<PaymentProcessResponse> {
         // Create payment request
         val request =
             PaymentRequest(

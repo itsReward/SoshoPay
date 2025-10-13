@@ -487,7 +487,7 @@ private fun QuickActionsSection(
             item {
                 QuickActionCard(
                     title = "Make Payment",
-                    description = "Pay your loan installments",
+                    description = "Pay your loan installments and View History",
                     icon = Icons.Default.Payment,
                     onClick = onPaymentsClick,
                 )

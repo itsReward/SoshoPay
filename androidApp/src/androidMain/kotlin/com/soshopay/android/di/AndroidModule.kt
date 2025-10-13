@@ -105,6 +105,7 @@ val androidModule =
                 getPaymentStatusUseCase = get(),
                 downloadReceiptUseCase = get(),
                 calculateEarlyPayoffUseCase = get(),
+                profileCache = get(),
             )
         }
 

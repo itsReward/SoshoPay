@@ -3,6 +3,7 @@ package com.soshopay.data.repository
 import com.soshopay.data.local.CacheManager
 import com.soshopay.data.local.LocalPaymentStorage
 import com.soshopay.data.remote.PaymentApiService
+import com.soshopay.data.remote.PaymentProcessResponse
 import com.soshopay.domain.model.EarlyPayoffCalculation
 import com.soshopay.domain.model.Payment
 import com.soshopay.domain.model.PaymentDashboard
@@ -186,7 +187,7 @@ class PaymentRepositoryImpl(
      * @param request The payment request data.
      * @return [Result] containing the payment ID if successful, or an error.
      */
-    override suspend fun processPayment(request: PaymentRequest): Result<String> {
+    override suspend fun processPayment(request: PaymentRequest): Result<PaymentProcessResponse> {
         return try {
             // Validate payment request first
             val validation = validatePaymentRequest(request)
@@ -215,7 +216,7 @@ class PaymentRepositoryImpl(
                     )
                 localStorage.insertPayment(payment)
 
-                Result.Success(response.paymentId)
+                Result.Success(response)
             } else {
                 Result.Error(Exception(apiResponse.getErrorOrNull() ?: "Failed to process payment"))
             }

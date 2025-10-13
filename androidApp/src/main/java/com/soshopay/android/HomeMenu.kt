@@ -70,6 +70,7 @@ import com.soshopay.android.ui.component.navigation.navigateToDeviceLoanCalculat
 import com.soshopay.android.ui.component.navigation.navigateToLoanApplication
 import com.soshopay.android.ui.component.navigation.navigateToLoanDashboard
 import com.soshopay.android.ui.component.navigation.navigateToLoanDetails
+import com.soshopay.android.ui.component.navigation.navigateToLoanHistory
 import com.soshopay.android.ui.component.navigation.navigateToLoansList
 import com.soshopay.android.ui.component.navigation.navigateToNotifications
 import com.soshopay.android.ui.component.navigation.navigateToPayGoApplication
@@ -121,8 +122,8 @@ fun HomeMenu() {
             NavHost(navController, startDestination = HomeNavigationRoutes.Home.name, modifier = Modifier.padding(innerPadding)) {
                 // Home destination - Main dashboard
                 home(
-                    navigateToLoansList = { navController.navigateToLoanDashboard() },
-                    navigateToLoanApplication = { navController.navigateToLoanApplication() },
+                    navigateToLoansList = { navController.navigateToLoanHistory() },
+                    navigateToLoanApplication = { navController.navigateToLoanDashboard() },
                     navigateToPaymentsList = { navController.navigateToPaymentsList() },
                     navigateToDeviceLoanCalculator = { navController.navigateToDeviceLoanCalculator() },
                     navigateToCashLoanCalculator = { navController.navigateToCashLoanCalculator() },
