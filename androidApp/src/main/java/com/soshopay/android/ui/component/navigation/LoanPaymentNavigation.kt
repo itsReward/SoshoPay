@@ -10,6 +10,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import com.soshopay.android.ui.component.loans.CashLoanApplicationScreen
 import com.soshopay.android.ui.component.loans.LoanDashboardScreen
+import com.soshopay.android.ui.component.loans.LoanDetailsScreen
 import com.soshopay.android.ui.component.loans.LoanHistoryScreen
 import com.soshopay.android.ui.component.payments.PaymentDashboardScreen
 import com.soshopay.domain.model.Loan
@@ -226,9 +227,12 @@ fun NavGraphBuilder.loanDetailsDestination(
             ),
     ) { backStackEntry ->
         val loanId = backStackEntry.arguments?.getString("loanId") ?: ""
-        // LoanDetailsScreen will be implemented
-        // For now, navigate back
-        onNavigateBack()
+
+        LoanDetailsScreen(
+            loanId = loanId,
+            onNavigateToPayment = onNavigateToPayment,
+            onNavigateBack = onNavigateBack,
+        )
     }
 }
 

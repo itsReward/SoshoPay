@@ -9,4 +9,5 @@ enum class PaymentStatus {
     CANCELLED,
     OVERDUE,
     CURRENT,
+    COMPLETED,
 }

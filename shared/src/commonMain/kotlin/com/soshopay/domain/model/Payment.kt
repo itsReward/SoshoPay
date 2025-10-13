@@ -38,5 +38,6 @@ data class Payment(
             PaymentStatus.CANCELLED -> "Cancelled"
             PaymentStatus.OVERDUE -> "Overdue"
             PaymentStatus.CURRENT -> "Current"
+            PaymentStatus.COMPLETED -> "Completed"
         }
 }

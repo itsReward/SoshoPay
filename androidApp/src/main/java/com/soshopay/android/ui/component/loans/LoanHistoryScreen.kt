@@ -338,7 +338,7 @@ private fun LoanHistoryCard(
         shape = RoundedCornerShape(12.dp),
         colors =
             CardDefaults.cardColors(
-                containerColor = if (isDarkMode) MaterialTheme.colorScheme.surface else Color.White,
+                containerColor = if (isDarkMode) MaterialTheme.colorScheme.tertiary else Color.White,
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {

@@ -44,7 +44,7 @@ val networkModule =
          * on the ApiConfig abstraction, not concrete implementations.
          */
         single<HttpClient> {
-            createHttpClient(get())
+            createHttpClient(get(), get())
         }
     }
 
@@ -60,7 +60,7 @@ object NetworkModules {
     val local =
         module {
             single<ApiConfig> { ApiConfigFactory.create(Environment.LOCAL) }
-            single<HttpClient> { createHttpClient(get()) }
+            single<HttpClient> { createHttpClient(get(), get()) }
         }
 
     /**
@@ -70,7 +70,7 @@ object NetworkModules {
     val beta =
         module {
             single<ApiConfig> { ApiConfigFactory.create(Environment.BETA) }
-            single<HttpClient> { createHttpClient(get()) }
+            single<HttpClient> { createHttpClient(get(), get()) }
         }
 
     /**
@@ -80,7 +80,7 @@ object NetworkModules {
     val production =
         module {
             single<ApiConfig> { ApiConfigFactory.create(Environment.PRODUCTION) }
-            single<HttpClient> { createHttpClient(get()) }
+            single<HttpClient> { createHttpClient(get(), get()) }
         }
 
     /**
@@ -92,6 +92,6 @@ object NetworkModules {
         port: Int,
     ) = module {
         single<ApiConfig> { ApiConfigFactory.createLocal(ip, port) }
-        single<HttpClient> { createHttpClient(get()) }
+        single<HttpClient> { createHttpClient(get(), get()) }
     }
 }
