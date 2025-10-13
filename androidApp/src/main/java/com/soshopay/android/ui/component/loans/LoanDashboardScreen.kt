@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.CreditCard
@@ -38,6 +39,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -109,52 +111,57 @@ fun LoanDashboardScreen(
     val isDarkMode = isSystemInDarkTheme()
 
     SoshoPayTheme {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(if (isDarkMode) MaterialTheme.colorScheme.primary else Color.White)
-                    .verticalScroll(rememberScrollState()),
-        ) {
-            // Header Section
-            LoanDashboardHeader()
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Main Content
-            if (dashboardState.isLoading) {
-                LoadingSection()
-            } else if (dashboardState.hasErrors()) {
-                ErrorSection(
-                    errorMessage = dashboardState.errorMessage!!,
-                    onRetry = { viewModel.onEvent(LoanPaymentEvent.LoadLoanDashboard) },
-                )
-            } else {
-                // Loan Options Section
-                LoanOptionsSection(
-                    onCashLoanClick = onNavigateToCashLoan,
-                    onPayGoClick = onNavigateToPayGo,
-                    payGoCategories = dashboardState.payGoCategories,
-                )
+        Scaffold(
+            topBar = {},
+        ) { innerPadding ->
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(if (isDarkMode) MaterialTheme.colorScheme.primary else Color.White)
+                        .verticalScroll(rememberScrollState())
+                        .padding(innerPadding),
+            ) {
+                // Header Section
+                LoanDashboardHeader()
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Quick Actions Section
-                QuickActionsSection(
-                    onLoanHistoryClick = onNavigateToLoanHistory,
-                    onPaymentsClick = onNavigateToPayments,
-                )
-            }
+                // Main Content
+                if (dashboardState.isLoading) {
+                    LoadingSection()
+                } else if (dashboardState.hasErrors()) {
+                    ErrorSection(
+                        errorMessage = dashboardState.errorMessage!!,
+                        onRetry = { viewModel.onEvent(LoanPaymentEvent.LoadLoanDashboard) },
+                    )
+                } else {
+                    // Loan Options Section
+                    LoanOptionsSection(
+                        onCashLoanClick = onNavigateToCashLoan,
+                        onPayGoClick = onNavigateToPayGo,
+                        payGoCategories = dashboardState.payGoCategories,
+                    )
 
-            // Profile Incomplete Dialog
-            if (dashboardState.showProfileIncompleteDialog) {
-                ProfileIncompleteDialog(
-                    onDismiss = { viewModel.onEvent(LoanPaymentEvent.DismissProfileIncompleteDialog) },
-                    onNavigateToProfile = {
-                        viewModel.onEvent(LoanPaymentEvent.DismissProfileIncompleteDialog)
-                        viewModel.onEvent(LoanPaymentEvent.NavigateToProfile)
-                    },
-                )
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Quick Actions Section
+                    QuickActionsSection(
+                        onLoanHistoryClick = onNavigateToLoanHistory,
+                        onPaymentsClick = onNavigateToPayments,
+                    )
+                }
+
+                // Profile Incomplete Dialog
+                if (dashboardState.showProfileIncompleteDialog) {
+                    ProfileIncompleteDialog(
+                        onDismiss = { viewModel.onEvent(LoanPaymentEvent.DismissProfileIncompleteDialog) },
+                        onNavigateToProfile = {
+                            viewModel.onEvent(LoanPaymentEvent.DismissProfileIncompleteDialog)
+                            viewModel.onEvent(LoanPaymentEvent.NavigateToProfile)
+                        },
+                    )
+                }
             }
         }
     }
@@ -573,7 +580,7 @@ private fun ProfileIncompleteDialog(
                         MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Bold,
                         ),
-                    color = if (isDarkMode) Color.White else Color.Black
+                    color = if (isDarkMode) Color.White else Color.Black,
                 )
             }
         },
@@ -588,7 +595,7 @@ private fun ProfileIncompleteDialog(
                 onClick = onNavigateToProfile,
                 colors =
                     ButtonDefaults.buttonColors(
-                        containerColor =  colorResource(id = R.color.yellow),
+                        containerColor = colorResource(id = R.color.yellow),
                     ),
             ) {
                 Text("Complete Profile", color = if (isDarkMode) Color.Black else Color.White)

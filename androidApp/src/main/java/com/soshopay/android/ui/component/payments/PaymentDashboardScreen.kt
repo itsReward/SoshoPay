@@ -310,7 +310,7 @@ private fun PaymentSummaryCards(dashboardState: com.soshopay.android.ui.state.Pa
                 title = "Current Loans",
                 value = "${dashboardState.currentCount}",
                 icon = Icons.Default.Payment,
-                color = MaterialTheme.colorScheme.primary,
+                color = if (isDarkMode) Color.White.copy(alpha = 0.5f) else Color.Gray,
                 modifier = Modifier.weight(1f),
             )
 
@@ -357,7 +357,7 @@ private fun SummaryMetricCard(
         shape = RoundedCornerShape(12.dp),
         colors =
             CardDefaults.cardColors(
-                containerColor = if (isDarkMode) MaterialTheme.colorScheme.surface else Color.White,
+                containerColor = if (isDarkMode) MaterialTheme.colorScheme.tertiary else Color.White,
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
@@ -416,7 +416,7 @@ private fun NextPaymentCard(
         shape = RoundedCornerShape(12.dp),
         colors =
             CardDefaults.cardColors(
-                containerColor = if (isDarkMode) MaterialTheme.colorScheme.surface else Color.White,
+                containerColor = if (isDarkMode) MaterialTheme.colorScheme.tertiary else Color.White,
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
@@ -453,7 +453,7 @@ private fun NextPaymentCard(
                             MaterialTheme.typography.headlineSmall.copy(
                                 fontWeight = FontWeight.Bold,
                             ),
-                        color = if (isDarkMode) colorResource(id = R.color.yellow) else MaterialTheme.colorScheme.primary,
+                        color = colorResource(id = R.color.yellow),
                     )
                 }
 
@@ -537,7 +537,7 @@ private fun PaymentSummaryCard(
         shape = RoundedCornerShape(12.dp),
         colors =
             CardDefaults.cardColors(
-                containerColor = if (isDarkMode) MaterialTheme.colorScheme.surface else Color.White,
+                containerColor = if (isDarkMode) MaterialTheme.colorScheme.tertiary else Color.White,
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
@@ -626,7 +626,7 @@ private fun PaymentSummaryCard(
                     ButtonDefaults.buttonColors(
                         containerColor =
                             if (paymentSummary.isOverdue()) {
-                                MaterialTheme.colorScheme.error
+                                MaterialTheme.colorScheme.errorContainer
                             } else {
                                 if (isDarkMode) {
                                     colorResource(id = R.color.yellow)

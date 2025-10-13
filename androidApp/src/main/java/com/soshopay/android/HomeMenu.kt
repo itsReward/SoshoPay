@@ -269,7 +269,7 @@ fun HomeMenu(
         }
         item { MenuCard("Loans", R.drawable.real_estate_agent, navigateToLoansList, isDarkMode) }
         item { MenuCard("Payments", R.drawable.payments, navigateToPaymentsList, isDarkMode) }
-        item { MenuCard("Loan Calculator", R.drawable.calculate, { showDialog = !showDialog }, isDarkMode) }
+        // item { MenuCard("Loan Calculator", R.drawable.calculate, { showDialog = !showDialog }, isDarkMode) }
         item { MenuCard("Your Notices", R.drawable.notifications, navigateToNotifications, isDarkMode) }
         item { MenuCard("Settings", R.drawable.settings, navigateToAdmin, isDarkMode) }
         item {
