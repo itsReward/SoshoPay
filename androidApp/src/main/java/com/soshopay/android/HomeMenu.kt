@@ -73,10 +73,12 @@ import com.soshopay.android.ui.component.navigation.navigateToLoanDetails
 import com.soshopay.android.ui.component.navigation.navigateToLoansList
 import com.soshopay.android.ui.component.navigation.navigateToNotifications
 import com.soshopay.android.ui.component.navigation.navigateToPayGoApplication
+import com.soshopay.android.ui.component.navigation.navigateToPaymentHistory
 import com.soshopay.android.ui.component.navigation.navigateToPaymentsList
 import com.soshopay.android.ui.component.navigation.navigateToProfile
 import com.soshopay.android.ui.component.navigation.notifications
 import com.soshopay.android.ui.component.navigation.onPop
+import com.soshopay.android.ui.component.navigation.paymentHistory
 import com.soshopay.android.ui.component.navigation.profile
 import com.soshopay.android.ui.component.navigation.userLoansNavGraph
 import com.soshopay.android.ui.theme.SoshoPayTheme
@@ -152,8 +154,12 @@ fun HomeMenu() {
 
                 // Loan Payments
                 loanPayments(
-                    onPop = { navController.onPop() },
+                    onNavigateToPaymentProcessing = { navController.navigateToLoanApplication() },
+                    onNavigateToPaymentHistory = { navController.navigateToPaymentHistory() },
                 )
+
+                // Payments History
+                paymentHistory(onNavigateBack = { navController.onPop() })
 
                 // Loan Calculator
                 loanCalculator(

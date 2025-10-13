@@ -432,7 +432,7 @@ class PaymentViewModel(
         _paymentHistoryState.value = _paymentHistoryState.value.copy(isLoading = true, errorMessage = null)
 
         viewModelScope.launch {
-            val result = getPaymentHistoryUseCase(0)
+            val result = getPaymentHistoryUseCase(1)
 
             when (result) {
                 is com.soshopay.domain.repository.Result.Success -> {

@@ -13,6 +13,7 @@ import com.soshopay.android.ui.component.loans.LoanDashboardScreen
 import com.soshopay.android.ui.component.loans.LoanDetailsScreen
 import com.soshopay.android.ui.component.loans.LoanHistoryScreen
 import com.soshopay.android.ui.component.payments.PaymentDashboardScreen
+import com.soshopay.android.ui.component.payments.PaymentHistoryScreen
 import com.soshopay.domain.model.Loan
 
 /**
@@ -273,9 +274,7 @@ fun NavGraphBuilder.paymentProcessingDestination(
  */
 fun NavGraphBuilder.paymentHistoryDestination(onNavigateBack: () -> Unit) {
     composable(LoanPaymentRoutes.PaymentHistory.name) {
-        // PaymentHistoryScreen will be implemented
-        // For now, navigate back
-        onNavigateBack()
+        PaymentHistoryScreen(onNavigateBack = onNavigateBack)
     }
 }
 
