@@ -283,7 +283,7 @@ private fun PaymentHistoryTopBar(
         },
         colors =
             TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.secondary,
                 titleContentColor = MaterialTheme.colorScheme.onSurface,
             ),
     )
@@ -573,7 +573,7 @@ private fun PaymentDetailsModal(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = if (isDarkMode) MaterialTheme.colorScheme.surface else Color.White,
+        containerColor = if (isDarkMode) MaterialTheme.colorScheme.secondary else Color.White,
     ) {
         Column(
             modifier =
@@ -591,11 +591,13 @@ private fun PaymentDetailsModal(
                     text = "Payment Details",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close",
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
@@ -648,6 +650,7 @@ private fun PaymentDetailsModal(
                     text = "Payment Breakdown",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))

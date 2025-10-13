@@ -130,7 +130,7 @@ fun PaymentDashboardScreen(
                 // Header
                 item {
                     PaymentDashboardHeader(
-                        onNavigateToHistory = { viewModel.onEvent(LoanPaymentEvent.LoadPaymentHistory) },
+                        onNavigateToHistory = onNavigateToPaymentHistory,
                     )
                 }
 
