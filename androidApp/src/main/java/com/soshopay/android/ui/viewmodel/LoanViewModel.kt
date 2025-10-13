@@ -698,7 +698,7 @@ class LoanViewModel(
         _loanHistoryState.value = _loanHistoryState.value.copy(isLoading = true, errorMessage = null)
 
         viewModelScope.launch {
-            val result = getLoanHistoryUseCase(com.soshopay.domain.model.LoanHistoryFilter.ALL, 0)
+            val result = getLoanHistoryUseCase(com.soshopay.domain.model.LoanHistoryFilter.ALL, 1)
 
             when (result) {
                 is com.soshopay.domain.repository.Result.Success -> {
