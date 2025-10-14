@@ -5,6 +5,7 @@ import com.soshopay.domain.model.CashLoanApplication
 import com.soshopay.domain.model.CashLoanCalculationRequest
 import com.soshopay.domain.model.CashLoanFormData
 import com.soshopay.domain.model.CashLoanTerms
+import com.soshopay.domain.model.CollateralDocument
 import com.soshopay.domain.model.Loan
 import com.soshopay.domain.model.LoanDetails
 import com.soshopay.domain.model.LoanHistoryResponse
@@ -60,6 +61,22 @@ interface LoanRepository {
      * @return [Result] containing the application ID if successful, or an error.
      */
     suspend fun submitCashLoanApplication(application: CashLoanApplication): Result<String>
+
+    /**
+     * Uploads a collateral document for a cash loan application.
+     *
+     * @param fileBytes The binary content of the file
+     * @param fileName The name of the file including extension
+     * @param fileType The MIME type of the file
+     * @param applicationId The application ID this document belongs to
+     * @return [Result] containing [CollateralDocument] if successful, or an error
+     */
+    suspend fun uploadCollateralDocument(
+        fileBytes: ByteArray,
+        fileName: String,
+        fileType: String,
+        applicationId: String,
+    ): Result<CollateralDocument>
 
     /**
      * Saves a draft of the cash loan application locally.

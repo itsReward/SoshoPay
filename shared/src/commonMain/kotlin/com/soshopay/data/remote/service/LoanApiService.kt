@@ -1,9 +1,11 @@
 package com.soshopay.data.remote
 
+import com.soshopay.data.remote.dto.ErrorResponse
 import com.soshopay.domain.model.CashLoanApplication
 import com.soshopay.domain.model.CashLoanCalculationRequest
 import com.soshopay.domain.model.CashLoanFormData
 import com.soshopay.domain.model.CashLoanTerms
+import com.soshopay.domain.model.CollateralDocument
 import com.soshopay.domain.model.Loan
 import com.soshopay.domain.model.LoanDetails
 import com.soshopay.domain.model.LoanHistoryResponse
@@ -13,11 +15,16 @@ import com.soshopay.domain.model.PayGoLoanTerms
 import com.soshopay.domain.model.PayGoProduct
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 
 class LoanApiService(
@@ -148,6 +155,60 @@ class LoanApiService(
             ApiResponse.Success(response.body())
         } catch (e: Exception) {
             ApiResponse.Error(e.message ?: "Failed to withdraw application", e)
+        }
+
+    /**
+     * NEW METHOD: Uploads a collateral document for a cash loan application.
+     *
+     * @param fileBytes The binary content of the document
+     * @param fileName The file name with extension
+     * @param applicationId The loan application ID
+     * @return [ApiResponse] containing [CollateralDocument] if successful
+     */
+    suspend fun uploadCollateralDocument(
+        fileBytes: ByteArray,
+        fileName: String,
+        applicationId: String,
+    ): ApiResponse<CollateralDocument> =
+        try {
+            val response =
+                httpClient.submitFormWithBinaryData(
+                    url = "api/loans/cash/collateral/upload",
+                    formData =
+                        formData {
+                            append(
+                                "file",
+                                fileBytes,
+                                Headers.build {
+                                    append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                                },
+                            )
+                            append("applicationId", applicationId)
+                        },
+                )
+
+            when (response.status) {
+                HttpStatusCode.OK -> {
+                    ApiResponse.Success(response.body())
+                }
+                HttpStatusCode.PayloadTooLarge -> {
+                    ApiResponse.Error("File size exceeds maximum allowed size of 5MB", null)
+                }
+                HttpStatusCode.UnsupportedMediaType -> {
+                    ApiResponse.Error("File type not supported. Only JPEG, PNG, and PDF files are allowed.", null)
+                }
+                else -> {
+                    val errorBody =
+                        try {
+                            response.body<ErrorResponse>()
+                        } catch (e: Exception) {
+                            ErrorResponse(message = "Failed to upload collateral document")
+                        }
+                    ApiResponse.Error(errorBody.message, null)
+                }
+            }
+        } catch (e: Exception) {
+            ApiResponse.Error(e.message ?: "Failed to upload collateral document", e)
         }
 }
 

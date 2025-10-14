@@ -8,6 +8,7 @@ import com.soshopay.domain.model.CashLoanApplication
 import com.soshopay.domain.model.CashLoanCalculationRequest
 import com.soshopay.domain.model.CashLoanFormData
 import com.soshopay.domain.model.CashLoanTerms
+import com.soshopay.domain.model.CollateralDocument
 import com.soshopay.domain.model.Loan
 import com.soshopay.domain.model.LoanDetails
 import com.soshopay.domain.model.LoanHistoryResponse
@@ -587,9 +588,12 @@ class LoanRepositoryImpl(
         }
 
     /**
+     * UPDATED: Enhanced validation for cash loan applications with multi-step wizard support.
+     *
      * Validates a cash loan application before submission.
-     * Checks for required fields, value constraints, and terms acceptance.
+     * Checks for required fields, value constraints, document uploads, and terms acceptance.
      * Adds warnings for collateral value less than loan amount.
+     *
      * @param application The cash loan application data.
      * @return [ValidationResult] indicating validity, errors, and warnings.
      */
@@ -597,27 +601,45 @@ class LoanRepositoryImpl(
         val errors = mutableListOf<String>()
         val warnings = mutableListOf<String>()
 
-        // Amount validation
+        // Step 1: Loan Details Validation
         if (application.loanAmount <= 0) {
             errors.add("Loan amount must be greater than zero")
         }
 
-        // Repayment period validation
-        if (application.repaymentPeriod.isBlank()) {
-            errors.add("Repayment period is required")
+        if (application.loanAmount < CashLoanApplication.MIN_LOAN_AMOUNT) {
+            errors.add("Minimum loan amount is $${CashLoanApplication.MIN_LOAN_AMOUNT}")
         }
 
-        // Loan purpose validation
+        if (application.loanAmount > CashLoanApplication.MAX_LOAN_AMOUNT) {
+            errors.add("Maximum loan amount is $${CashLoanApplication.MAX_LOAN_AMOUNT}")
+        }
+
         if (application.loanPurpose.isBlank()) {
             errors.add("Loan purpose is required")
         }
 
-        // Employer industry validation
+        if (application.repaymentPeriod.isBlank()) {
+            errors.add("Repayment period is required")
+        }
+
+        // Step 2: Income & Employment Validation
+        if (application.monthlyIncome <= 0) {
+            errors.add("Monthly income must be greater than zero")
+        }
+
+        if (application.monthlyIncome < CashLoanApplication.MIN_MONTHLY_INCOME) {
+            errors.add("Minimum monthly income is $${CashLoanApplication.MIN_MONTHLY_INCOME}")
+        }
+
         if (application.employerIndustry.isBlank()) {
             errors.add("Employer industry is required")
         }
 
-        // Collateral validation
+        // Step 3: Collateral Validation
+        if (application.collateralType.isBlank()) {
+            errors.add("Collateral type is required")
+        }
+
         if (application.collateralValue <= 0) {
             errors.add("Collateral value must be greater than zero")
         }
@@ -626,14 +648,36 @@ class LoanRepositoryImpl(
             errors.add("Collateral details are required")
         }
 
-        // Terms validation
+        // Collateral Documents Validation
+        if (application.collateralDocuments.isEmpty()) {
+            errors.add("At least one collateral document is required")
+        } else {
+            // Validate each document
+            application.collateralDocuments.forEachIndexed { index, doc ->
+                val docValidation = doc.validate()
+                if (!docValidation.isValid) {
+                    errors.add("Document ${index + 1}: ${docValidation.errors.joinToString(", ")}")
+                }
+            }
+        }
+
+        // Step 4: Terms Validation
+        if (application.calculatedTerms == null) {
+            errors.add("Loan terms must be calculated before submission")
+        }
+
+        // Step 5: Confirmation Validation
         if (!application.acceptedTerms) {
             errors.add("You must accept the loan terms to proceed")
         }
 
         // Warnings
         if (application.collateralValue < application.loanAmount) {
-            warnings.add("Collateral value is less than loan amount")
+            warnings.add("Collateral value is less than loan amount. This may affect loan approval.")
+        }
+
+        if (application.monthlyIncome < application.loanAmount / 12) {
+            warnings.add("Monthly income is less than the estimated monthly payment. Please review your repayment capacity.")
         }
 
         return ValidationResult(
@@ -688,5 +732,56 @@ class LoanRepositoryImpl(
             errors = errors,
             warnings = warnings,
         )
+    }
+
+    /**
+     * NEW METHOD: Uploads a collateral document for a cash loan application.
+     *
+     * @param fileBytes The binary content of the file
+     * @param fileName The name of the file including extension
+     * @param fileType The MIME type of the file
+     * @param applicationId The application ID this document belongs to
+     * @return [Result] containing [CollateralDocument] if successful, or an error
+     */
+    override suspend fun uploadCollateralDocument(
+        fileBytes: ByteArray,
+        fileName: String,
+        fileType: String,
+        applicationId: String,
+    ): Result<CollateralDocument> {
+        return try {
+            // Validate file size
+            if (fileBytes.size > CollateralDocument.MAX_FILE_SIZE_BYTES) {
+                return Result.Error(
+                    Exception("File size exceeds maximum allowed size of 5MB"),
+                )
+            }
+
+            // Validate file type
+            if (!CollateralDocument.ALLOWED_FILE_TYPES.contains(fileType.lowercase())) {
+                return Result.Error(
+                    Exception("File type not allowed. Only JPEG, PNG, and PDF files are accepted."),
+                )
+            }
+
+            // Upload via API service
+            val apiResponse =
+                loanApiService.uploadCollateralDocument(
+                    fileBytes = fileBytes,
+                    fileName = fileName,
+                    applicationId = applicationId,
+                )
+
+            if (apiResponse.isSuccess()) {
+                val document = apiResponse.getOrNull()!!
+                Result.Success(document)
+            } else {
+                Result.Error(
+                    Exception(apiResponse.getErrorOrNull() ?: "Failed to upload collateral document"),
+                )
+            }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
     }
 }

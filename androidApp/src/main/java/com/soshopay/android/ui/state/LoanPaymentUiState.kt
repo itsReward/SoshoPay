@@ -1,8 +1,7 @@
 package com.soshopay.android.ui.state
 
-import com.soshopay.domain.model.CashLoanApplication
+import com.soshopay.domain.model.CashLoanApplicationStep
 import com.soshopay.domain.model.CashLoanFormData
-import com.soshopay.domain.model.CashLoanTerms
 import com.soshopay.domain.model.Guarantor
 import com.soshopay.domain.model.Loan
 import com.soshopay.domain.model.LoanDetails
@@ -10,7 +9,6 @@ import com.soshopay.domain.model.LoanStatus
 import com.soshopay.domain.model.PayGoLoanTerms
 import com.soshopay.domain.model.PayGoProduct
 import com.soshopay.domain.model.Payment
-import com.soshopay.domain.model.PaymentMethod
 import com.soshopay.domain.model.PaymentMethodInfo
 import com.soshopay.domain.model.PaymentSchedule
 import com.soshopay.domain.model.PaymentStatus
@@ -46,36 +44,6 @@ data class LoanDashboardState(
     val showProfileIncompleteDialog: Boolean = false,
 ) {
     fun hasErrors(): Boolean = errorMessage != null
-}
-
-/**
- * Data class representing the cash loan application screen state
- */
-data class CashLoanApplicationState(
-    val formData: CashLoanFormData? = null,
-    val application: CashLoanApplication? = null,
-    val loanAmount: String = "",
-    val loanPurpose: String = "",
-    val repaymentPeriod: String = "",
-    val monthlyIncome: String = "",
-    val collateralType: String = "",
-    val collateralValue: String = "",
-    val calculatedTerms: CashLoanTerms? = null,
-    val isLoading: Boolean = false,
-    val errorMessage: String? = null,
-    val validationErrors: Map<String, String> = emptyMap(),
-    val showTermsDialog: Boolean = false,
-    val showConfirmationDialog: Boolean = false,
-    val isApplicationEnabled: Boolean = false,
-) {
-    fun hasErrors(): Boolean = errorMessage != null || validationErrors.isNotEmpty()
-
-    fun isFormValid(): Boolean =
-        loanAmount.isNotEmpty() &&
-            loanPurpose.isNotEmpty() &&
-            repaymentPeriod.isNotEmpty() &&
-            monthlyIncome.isNotEmpty() &&
-            validationErrors.isEmpty()
 }
 
 /**
@@ -258,7 +226,22 @@ sealed class LoanPaymentEvent {
 
     object NavigateToProfile : LoanPaymentEvent()
 
-    // Cash Loan Application Events
+    // ========== CASH LOAN APPLICATION - NAVIGATION EVENTS ==========
+    object InitializeCashLoanApplication : LoanPaymentEvent()
+
+    object LoadCashLoanDraft : LoanPaymentEvent()
+
+    data class NavigateToStep(
+        val step: CashLoanApplicationStep,
+    ) : LoanPaymentEvent()
+
+    object NextStep : LoanPaymentEvent()
+
+    object PreviousStep : LoanPaymentEvent()
+
+    object CancelApplication : LoanPaymentEvent()
+
+    // ========== CASH LOAN APPLICATION - STEP 1: LOAN DETAILS ==========
     data class UpdateLoanAmount(
         val amount: String,
     ) : LoanPaymentEvent()
@@ -271,10 +254,16 @@ sealed class LoanPaymentEvent {
         val period: String,
     ) : LoanPaymentEvent()
 
+    // ========== CASH LOAN APPLICATION - STEP 2: INCOME & EMPLOYMENT ==========
     data class UpdateMonthlyIncome(
         val income: String,
     ) : LoanPaymentEvent()
 
+    data class UpdateEmployerIndustry(
+        val industry: String,
+    ) : LoanPaymentEvent()
+
+    // ========== CASH LOAN APPLICATION - STEP 3: COLLATERAL INFORMATION ==========
     data class UpdateCollateralType(
         val type: String,
     ) : LoanPaymentEvent()
@@ -283,7 +272,38 @@ sealed class LoanPaymentEvent {
         val value: String,
     ) : LoanPaymentEvent()
 
-    object CalculateLoanTerms : LoanPaymentEvent()
+    data class UpdateCollateralDetails(
+        val details: String,
+    ) : LoanPaymentEvent()
+
+    data class UploadCollateralDocument(
+        val fileBytes: ByteArray,
+        val fileName: String,
+        val fileType: String,
+    ) : LoanPaymentEvent() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is UploadCollateralDocument) return false
+            if (!fileBytes.contentEquals(other.fileBytes)) return false
+            if (fileName != other.fileName) return false
+            if (fileType != other.fileType) return false
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = fileBytes.contentHashCode()
+            result = 31 * result + fileName.hashCode()
+            result = 31 * result + fileType.hashCode()
+            return result
+        }
+    }
+
+    data class RemoveCollateralDocument(
+        val documentId: String,
+    ) : LoanPaymentEvent()
+
+    // ========== CASH LOAN APPLICATION - STEP 4: TERMS REVIEW ==========
+    object CalculateCashLoanTerms : LoanPaymentEvent()
 
     object ShowTermsDialog : LoanPaymentEvent()
 
@@ -291,11 +311,20 @@ sealed class LoanPaymentEvent {
 
     object AcceptTerms : LoanPaymentEvent()
 
+    // ========== CASH LOAN APPLICATION - STEP 5: CONFIRMATION ==========
     object ShowConfirmationDialog : LoanPaymentEvent()
 
     object DismissConfirmationDialog : LoanPaymentEvent()
 
     object SubmitCashLoanApplication : LoanPaymentEvent()
+
+    // ========== CASH LOAN APPLICATION - DRAFT MANAGEMENT ==========
+    object SaveDraft : LoanPaymentEvent()
+
+    object ClearValidationErrors : LoanPaymentEvent()
+
+    // Cash Loan Application Events
+    object CalculateLoanTerms : LoanPaymentEvent()
 
     object SaveDraftApplication : LoanPaymentEvent()
 

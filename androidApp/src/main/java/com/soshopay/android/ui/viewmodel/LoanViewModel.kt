@@ -12,6 +12,7 @@ import com.soshopay.android.ui.state.PayGoApplicationState
 import com.soshopay.android.ui.state.PayGoStep
 import com.soshopay.domain.model.ApplicationStatus
 import com.soshopay.domain.model.CashLoanApplication
+import com.soshopay.domain.model.CashLoanApplicationStep
 import com.soshopay.domain.model.CashLoanCalculationRequest
 import com.soshopay.domain.model.CashLoanFormData
 import com.soshopay.domain.model.CashLoanTerms
@@ -34,10 +35,13 @@ import com.soshopay.domain.usecase.loan.GetPayGoProductsUseCase
 import com.soshopay.domain.usecase.loan.SaveCashLoanDraftUseCase
 import com.soshopay.domain.usecase.loan.SubmitCashLoanApplicationUseCase
 import com.soshopay.domain.usecase.loan.SubmitPayGoApplicationUseCase
+import com.soshopay.domain.usecase.loan.UploadCollateralDocumentUseCase
 import com.soshopay.domain.usecase.profile.GetUserProfileUseCase
 import com.soshopay.domain.usecase.profile.ValidateProfileCompletionUseCase
 import com.soshopay.domain.util.Result
 import com.soshopay.domain.util.SoshoPayException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -45,6 +49,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /**
  * Comprehensive ViewModel for loan operations following MVVM and Clean Architecture patterns.
@@ -89,6 +95,7 @@ class LoanViewModel(
     private val downloadLoanAgreementUseCase: DownloadLoanAgreementUseCase,
     private val validateProfileCompletionUseCase: ValidateProfileCompletionUseCase,
     private val getUserProfileUseCase: GetUserProfileUseCase,
+    private val uploadCollateralDocumentUseCase: UploadCollateralDocumentUseCase,
 ) : ViewModel() {
     // ========== STATE MANAGEMENT ==========
 
@@ -253,210 +260,6 @@ class LoanViewModel(
     }
 
     // ========== CASH LOAN APPLICATION OPERATIONS ==========
-
-    private fun updateLoanAmount(amount: String) {
-        val sanitizedAmount = amount.filter { it.isDigit() || it == '.' }
-        val error = validateLoanAmount(sanitizedAmount)
-        val currentState = _cashLoanApplicationState.value
-
-        _cashLoanApplicationState.value =
-            currentState.copy(
-                loanAmount = sanitizedAmount,
-                validationErrors =
-                    if (error != null) {
-                        currentState.validationErrors + ("loanAmount" to error)
-                    } else {
-                        currentState.validationErrors - "loanAmount"
-                    },
-                isApplicationEnabled = currentState.isFormValid() && error == null,
-            )
-    }
-
-    private fun updateLoanPurpose(purpose: String) {
-        val error = validateLoanPurpose(purpose)
-        val currentState = _cashLoanApplicationState.value
-
-        _cashLoanApplicationState.value =
-            currentState.copy(
-                loanPurpose = purpose,
-                validationErrors =
-                    if (error != null) {
-                        currentState.validationErrors + ("loanPurpose" to error)
-                    } else {
-                        currentState.validationErrors - "loanPurpose"
-                    },
-            )
-    }
-
-    private fun updateRepaymentPeriod(period: String) {
-        val error = validateRepaymentPeriod(period)
-        val currentState = _cashLoanApplicationState.value
-
-        _cashLoanApplicationState.value =
-            currentState.copy(
-                repaymentPeriod = period,
-                validationErrors =
-                    if (error != null) {
-                        currentState.validationErrors + ("repaymentPeriod" to error)
-                    } else {
-                        currentState.validationErrors - "repaymentPeriod"
-                    },
-            )
-    }
-
-    private fun updateMonthlyIncome(income: String) {
-        val sanitizedIncome = income.filter { it.isDigit() || it == '.' }
-        val error = validateMonthlyIncome(sanitizedIncome)
-        val currentState = _cashLoanApplicationState.value
-
-        _cashLoanApplicationState.value =
-            currentState.copy(
-                monthlyIncome = sanitizedIncome,
-                validationErrors =
-                    if (error != null) {
-                        currentState.validationErrors + ("monthlyIncome" to error)
-                    } else {
-                        currentState.validationErrors - "monthlyIncome"
-                    },
-            )
-    }
-
-    private fun updateCollateralType(type: String) {
-        val currentState = _cashLoanApplicationState.value
-        _cashLoanApplicationState.value = currentState.copy(collateralType = type)
-    }
-
-    private fun updateCollateralValue(value: String) {
-        val sanitizedValue = value.filter { it.isDigit() || it == '.' }
-        val currentState = _cashLoanApplicationState.value
-        _cashLoanApplicationState.value = currentState.copy(collateralValue = sanitizedValue)
-    }
-
-    private fun calculateCashLoanTerms() {
-        val currentState = _cashLoanApplicationState.value
-        if (!currentState.isFormValid()) return
-
-        _cashLoanApplicationState.value = currentState.copy(isLoading = true, errorMessage = null)
-
-        viewModelScope.launch {
-            val request =
-                CashLoanCalculationRequest(
-                    loanAmount = currentState.loanAmount.toDoubleOrNull() ?: 0.0,
-                    repaymentPeriod = currentState.repaymentPeriod,
-                    monthlyIncome = currentState.monthlyIncome.toDoubleOrNull() ?: 0.0,
-                    employerIndustry = currentState.application?.employerIndustry ?: "",
-                    collateralValue = currentState.collateralValue.toDouble(),
-                )
-
-            val result =
-                calculateCashLoanTermsUseCase(
-                    request.loanAmount,
-                    request.repaymentPeriod,
-                    request.employerIndustry,
-                    request.collateralValue,
-                    request.monthlyIncome,
-                )
-
-            when (result) {
-                is com.soshopay.domain.repository.Result.Success<CashLoanTerms> -> {
-                    _cashLoanApplicationState.value =
-                        currentState.copy(
-                            isLoading = false,
-                            calculatedTerms = result.data,
-                            showTermsDialog = true,
-                        )
-                }
-                is com.soshopay.domain.repository.Result.Error -> {
-                    _cashLoanApplicationState.value =
-                        currentState.copy(
-                            isLoading = false,
-                            errorMessage = getErrorMessage(result.exception),
-                        )
-                }
-                is com.soshopay.domain.repository.Result.Loading -> {
-                    _cashLoanApplicationState.value = currentState.copy(isLoading = true)
-                }
-
-                is com.soshopay.domain.repository.Result.Error -> TODO()
-                com.soshopay.domain.repository.Result.Loading -> TODO()
-                is com.soshopay.domain.repository.Result.Success<*> -> TODO()
-            }
-        }
-    }
-
-    private fun showTermsDialog() {
-        _cashLoanApplicationState.value = _cashLoanApplicationState.value.copy(showTermsDialog = true)
-    }
-
-    private fun dismissTermsDialog() {
-        _cashLoanApplicationState.value = _cashLoanApplicationState.value.copy(showTermsDialog = false)
-    }
-
-    private fun acceptTerms() {
-        _cashLoanApplicationState.value =
-            _cashLoanApplicationState.value.copy(
-                showTermsDialog = false,
-                showConfirmationDialog = true,
-            )
-    }
-
-    private fun showConfirmationDialog() {
-        _cashLoanApplicationState.value = _cashLoanApplicationState.value.copy(showConfirmationDialog = true)
-    }
-
-    private fun dismissConfirmationDialog() {
-        _cashLoanApplicationState.value = _cashLoanApplicationState.value.copy(showConfirmationDialog = false)
-    }
-
-    private fun submitCashLoanApplication() {
-        val currentState = _cashLoanApplicationState.value
-        val terms = currentState.calculatedTerms ?: return
-
-        _cashLoanApplicationState.value = currentState.copy(isLoading = true, errorMessage = null)
-
-        viewModelScope.launch {
-            val application =
-                CashLoanApplication(
-                    id = "",
-                    userId = "",
-                    applicationId = "",
-                    loanType = LoanType.CASH,
-                    loanAmount = currentState.loanAmount.toDoubleOrNull() ?: 0.0,
-                    loanPurpose = currentState.loanPurpose,
-                    repaymentPeriod = currentState.repaymentPeriod,
-                    collateralValue = currentState.collateralValue.toDoubleOrNull() ?: 0.0,
-                    calculatedTerms = terms,
-                    status = ApplicationStatus.SUBMITTED,
-                    submittedAt = System.currentTimeMillis(),
-                    acceptedTerms = true,
-                    employerIndustry = currentState.application?.employerIndustry ?: "",
-                    collateralDetails = currentState.application?.collateralDetails ?: "",
-                )
-
-            val result = submitCashLoanApplicationUseCase(application)
-
-            when (result) {
-                is com.soshopay.domain.repository.Result.Success -> {
-                    _cashLoanApplicationState.value = currentState.copy(isLoading = false)
-                    // Navigate to loan history to show submitted application
-                    _navigationEvents.emit(LoanPaymentNavigation.ToLoanHistory)
-                }
-                is com.soshopay.domain.repository.Result.Error -> {
-                    _cashLoanApplicationState.value =
-                        currentState.copy(
-                            isLoading = false,
-                            errorMessage = getErrorMessage(result.exception),
-                        )
-                    // Save as draft for retry later
-                    saveDraftApplication()
-                }
-                is com.soshopay.domain.repository.Result.Loading -> {
-                    _cashLoanApplicationState.value = currentState.copy(isLoading = true)
-                }
-            }
-        }
-    }
-
     private fun saveDraftApplication() {
         val currentState = _cashLoanApplicationState.value
 
@@ -480,6 +283,865 @@ class LoanViewModel(
                 )
 
             saveCashLoanDraftUseCase(application)
+        }
+    }
+
+    // ========== CASH LOAN APPLICATION - MULTI-STEP WIZARD ==========
+
+    /**
+     * Initializes the cash loan application.
+     * Loads form data, checks for existing draft, and pre-populates fields from user profile.
+     */
+    private fun initializeCashLoanApplication() {
+        viewModelScope.launch {
+            _cashLoanApplicationState.value = _cashLoanApplicationState.value.copy(isLoading = true)
+
+            // Load form data
+            val formDataResult = getCashLoanFormDataUseCase()
+
+            // Get user profile for pre-population
+            val userProfileResult = getUserProfileUseCase()
+
+            // Check for existing draft
+            val draftResult =
+                when (userProfileResult) {
+                    is Result.Success -> getCashLoanDraftUseCase(userProfileResult.data.id)
+                    else -> Result.Success(null)
+                }
+
+            when {
+                formDataResult is Result.Success<CashLoanFormData> && userProfileResult is Result.Success -> {
+                    val formData = formDataResult.data
+                    val user = userProfileResult.data
+                    val draft = (draftResult as? Result.Success<CashLoanApplication?>)?.data
+
+                    if (draft != null) {
+                        // Load existing draft
+                        _cashLoanApplicationState.value =
+                            _cashLoanApplicationState.value.copy(
+                                formData = formData as CashLoanFormData?,
+                                application = draft,
+                                currentStep = draft.currentStep,
+                                loanAmount = draft.loanAmount.toString(),
+                                loanPurpose = draft.loanPurpose,
+                                repaymentPeriod = draft.repaymentPeriod,
+                                monthlyIncome = draft.monthlyIncome.toString(),
+                                employerIndustry = draft.employerIndustry,
+                                collateralType = draft.collateralType,
+                                collateralValue = draft.collateralValue.toString(),
+                                collateralDetails = draft.collateralDetails,
+                                collateralDocuments = draft.collateralDocuments,
+                                calculatedTerms = draft.calculatedTerms,
+                                isLoading = false,
+                            )
+                    } else {
+                        // Pre-populate from user profile
+                        _cashLoanApplicationState.value =
+                            _cashLoanApplicationState.value.copy(
+                                formData = formData,
+                                application = CashLoanApplication.createDraft(user.id),
+                                monthlyIncome = user.personalDetails?.monthlyIncome?.toString() ?: "",
+                                employerIndustry = user.personalDetails?.occupation ?: "",
+                                isLoading = false,
+                            )
+                    }
+                }
+                formDataResult is Result.Error -> {
+                    _cashLoanApplicationState.value =
+                        _cashLoanApplicationState.value.copy(
+                            isLoading = false,
+                            errorMessage = getErrorMessage(formDataResult.exception),
+                        )
+                }
+                userProfileResult is Result.Error -> {
+                    _cashLoanApplicationState.value =
+                        _cashLoanApplicationState.value.copy(
+                            isLoading = false,
+                            errorMessage = getErrorMessage(userProfileResult.exception),
+                        )
+                }
+            }
+        }
+    }
+
+// ========== STEP NAVIGATION ==========
+
+    /**
+     * Navigates to a specific step in the wizard.
+     */
+    private fun navigateToStep(step: CashLoanApplicationStep) {
+        val currentState = _cashLoanApplicationState.value
+
+        // Validate current step before allowing navigation forward
+        if (step.stepNumber > currentState.currentStep.stepNumber) {
+            if (!currentState.isCurrentStepValid()) {
+                validateCurrentStep()
+                return
+            }
+        }
+
+        _cashLoanApplicationState.value = currentState.copy(currentStep = step)
+        autoSaveDraft()
+    }
+
+    /**
+     * Moves to the next step in the wizard.
+     */
+    private fun nextStep() {
+        val currentState = _cashLoanApplicationState.value
+
+        // Validate current step
+        if (!currentState.isCurrentStepValid()) {
+            validateCurrentStep()
+            return
+        }
+
+        val nextStep = currentState.currentStep.next()
+        if (nextStep != null) {
+            _cashLoanApplicationState.value =
+                currentState.copy(
+                    currentStep = nextStep,
+                    errorMessage = null,
+                    validationErrors = emptyMap(),
+                )
+            autoSaveDraft()
+        }
+    }
+
+    /**
+     * Moves to the previous step in the wizard.
+     */
+    private fun previousStep() {
+        val currentState = _cashLoanApplicationState.value
+        val previousStep = currentState.currentStep.previous()
+
+        if (previousStep != null) {
+            _cashLoanApplicationState.value =
+                currentState.copy(
+                    currentStep = previousStep,
+                    errorMessage = null,
+                    validationErrors = emptyMap(),
+                )
+        }
+    }
+
+// ========== STEP 1: LOAN DETAILS ==========
+
+    /**
+     * Updates the loan amount and triggers validation.
+     */
+    private fun updateLoanAmount(amount: String) {
+        val sanitizedAmount = amount.filter { it.isDigit() || it == '.' }
+
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                loanAmount = sanitizedAmount,
+            )
+
+        validateLoanAmount(sanitizedAmount)
+        autoSaveDraft()
+    }
+
+    /**
+     * Validates the loan amount field.
+     */
+    private fun validateLoanAmount(amount: String) {
+        val errors = _cashLoanApplicationState.value.validationErrors.toMutableMap()
+
+        val amountValue = amount.toDoubleOrNull()
+        when {
+            amount.isBlank() -> errors["loanAmount"] = "Loan amount is required"
+            amountValue == null -> errors["loanAmount"] = "Invalid amount"
+            amountValue < 100 -> errors["loanAmount"] = "Minimum loan amount is $100"
+            amountValue > 50000 -> errors["loanAmount"] = "Maximum loan amount is $50,000"
+            else -> errors.remove("loanAmount")
+        }
+
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                validationErrors = errors,
+            )
+    }
+
+    /**
+     * Updates the loan purpose.
+     */
+    private fun updateLoanPurpose(purpose: String) {
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                loanPurpose = purpose,
+            )
+
+        validateLoanPurpose(purpose)
+        autoSaveDraft()
+    }
+
+    /**
+     * Validates the loan purpose field.
+     */
+    private fun validateLoanPurpose(purpose: String) {
+        val errors = _cashLoanApplicationState.value.validationErrors.toMutableMap()
+
+        if (purpose.isBlank()) {
+            errors["loanPurpose"] = "Loan purpose is required"
+        } else {
+            errors.remove("loanPurpose")
+        }
+
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                validationErrors = errors,
+            )
+    }
+
+    /**
+     * Updates the repayment period.
+     */
+    private fun updateRepaymentPeriod(period: String) {
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                repaymentPeriod = period,
+            )
+
+        validateRepaymentPeriod(period)
+        autoSaveDraft()
+    }
+
+    /**
+     * Validates the repayment period field.
+     */
+    private fun validateRepaymentPeriod(period: String) {
+        val errors = _cashLoanApplicationState.value.validationErrors.toMutableMap()
+
+        if (period.isBlank()) {
+            errors["repaymentPeriod"] = "Repayment period is required"
+        } else {
+            errors.remove("repaymentPeriod")
+        }
+
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                validationErrors = errors,
+            )
+    }
+
+// ========== STEP 2: INCOME & EMPLOYMENT ==========
+
+    /**
+     * Updates the monthly income and triggers validation.
+     */
+    private fun updateMonthlyIncome(income: String) {
+        val sanitizedIncome = income.filter { it.isDigit() || it == '.' }
+
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                monthlyIncome = sanitizedIncome,
+            )
+
+        validateMonthlyIncome(sanitizedIncome)
+        autoSaveDraft()
+    }
+
+    /**
+     * Validates the monthly income field.
+     */
+    private fun validateMonthlyIncome(income: String) {
+        val errors = _cashLoanApplicationState.value.validationErrors.toMutableMap()
+
+        val incomeValue = income.toDoubleOrNull()
+        when {
+            income.isBlank() -> errors["monthlyIncome"] = "Monthly income is required"
+            incomeValue == null -> errors["monthlyIncome"] = "Invalid income amount"
+            incomeValue < 150 -> errors["monthlyIncome"] = "Minimum monthly income is $150"
+            else -> errors.remove("monthlyIncome")
+        }
+
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                validationErrors = errors,
+            )
+    }
+
+    /**
+     * Updates the employer industry.
+     */
+    private fun updateEmployerIndustry(industry: String) {
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                employerIndustry = industry,
+            )
+
+        validateEmployerIndustry(industry)
+        autoSaveDraft()
+    }
+
+    /**
+     * Validates the employer industry field.
+     */
+    private fun validateEmployerIndustry(industry: String) {
+        val errors = _cashLoanApplicationState.value.validationErrors.toMutableMap()
+
+        if (industry.isBlank()) {
+            errors["employerIndustry"] = "Employer industry is required"
+        } else {
+            errors.remove("employerIndustry")
+        }
+
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                validationErrors = errors,
+            )
+    }
+
+// ========== STEP 3: COLLATERAL INFORMATION ==========
+
+    /**
+     * Updates the collateral type.
+     */
+    private fun updateCollateralType(type: String) {
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                collateralType = type,
+            )
+
+        validateCollateralType(type)
+        autoSaveDraft()
+    }
+
+    /**
+     * Validates the collateral type field.
+     */
+    private fun validateCollateralType(type: String) {
+        val errors = _cashLoanApplicationState.value.validationErrors.toMutableMap()
+
+        if (type.isBlank()) {
+            errors["collateralType"] = "Collateral type is required"
+        } else {
+            errors.remove("collateralType")
+        }
+
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                validationErrors = errors,
+            )
+    }
+
+    /**
+     * Updates the collateral value and triggers validation.
+     */
+    private fun updateCollateralValue(value: String) {
+        val sanitizedValue = value.filter { it.isDigit() || it == '.' }
+
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                collateralValue = sanitizedValue,
+            )
+
+        validateCollateralValue(sanitizedValue)
+        autoSaveDraft()
+    }
+
+    /**
+     * Validates the collateral value field.
+     */
+    private fun validateCollateralValue(value: String) {
+        val errors = _cashLoanApplicationState.value.validationErrors.toMutableMap()
+
+        val valueAmount = value.toDoubleOrNull()
+        when {
+            value.isBlank() -> errors["collateralValue"] = "Collateral value is required"
+            valueAmount == null -> errors["collateralValue"] = "Invalid value"
+            valueAmount <= 0 -> errors["collateralValue"] = "Collateral value must be greater than zero"
+            else -> errors.remove("collateralValue")
+        }
+
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                validationErrors = errors,
+            )
+    }
+
+    /**
+     * Updates the collateral details.
+     */
+    private fun updateCollateralDetails(details: String) {
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                collateralDetails = details,
+            )
+
+        validateCollateralDetails(details)
+        autoSaveDraft()
+    }
+
+    /**
+     * Validates the collateral details field.
+     */
+    private fun validateCollateralDetails(details: String) {
+        val errors = _cashLoanApplicationState.value.validationErrors.toMutableMap()
+
+        if (details.isBlank()) {
+            errors["collateralDetails"] = "Collateral details are required"
+        } else {
+            errors.remove("collateralDetails")
+        }
+
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                validationErrors = errors,
+            )
+    }
+
+    /**
+     * Uploads a collateral document.
+     */
+    private fun uploadCollateralDocument(
+        fileBytes: ByteArray,
+        fileName: String,
+        fileType: String,
+    ) {
+        viewModelScope.launch {
+            _cashLoanApplicationState.value =
+                _cashLoanApplicationState.value.copy(
+                    uploadingDocument = true,
+                    uploadProgress = 0f,
+                )
+
+            val applicationId = _cashLoanApplicationState.value.application?.id ?: "draft_${System.currentTimeMillis()}"
+
+            // Simulate upload progress (in real implementation, use actual progress)
+            _cashLoanApplicationState.value = _cashLoanApplicationState.value.copy(uploadProgress = 0.3f)
+
+            val result =
+                uploadCollateralDocumentUseCase(
+                    fileBytes = fileBytes,
+                    fileName = fileName,
+                    fileType = fileType,
+                    applicationId = applicationId,
+                )
+
+            when (result) {
+                is com.soshopay.domain.repository.Result.Success -> {
+                    val currentDocs = _cashLoanApplicationState.value.collateralDocuments
+                    val updatedDocs = currentDocs + result.data
+
+                    _cashLoanApplicationState.value =
+                        _cashLoanApplicationState.value.copy(
+                            collateralDocuments = updatedDocs,
+                            uploadingDocument = false,
+                            uploadProgress = 1f,
+                        )
+
+                    // Clear validation error for documents
+                    val errors = _cashLoanApplicationState.value.validationErrors.toMutableMap()
+                    errors.remove("collateralDocuments")
+                    _cashLoanApplicationState.value =
+                        _cashLoanApplicationState.value.copy(
+                            validationErrors = errors,
+                        )
+
+                    autoSaveDraft()
+                }
+                is com.soshopay.domain.repository.Result.Error -> {
+                    _cashLoanApplicationState.value =
+                        _cashLoanApplicationState.value.copy(
+                            uploadingDocument = false,
+                            uploadProgress = 0f,
+                            errorMessage = getErrorMessage(result.exception),
+                        )
+                }
+                is com.soshopay.domain.repository.Result.Loading -> {
+                    _cashLoanApplicationState.value = _cashLoanApplicationState.value.copy(uploadProgress = 0.6f)
+                }
+            }
+        }
+    }
+
+    /**
+     * Removes a collateral document.
+     */
+    private fun removeCollateralDocument(documentId: String) {
+        val currentDocs = _cashLoanApplicationState.value.collateralDocuments
+        val updatedDocs = currentDocs.filter { it.id != documentId }
+
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                collateralDocuments = updatedDocs,
+            )
+
+        // Validate documents after removal
+        if (updatedDocs.isEmpty()) {
+            val errors = _cashLoanApplicationState.value.validationErrors.toMutableMap()
+            errors["collateralDocuments"] = "At least one collateral document is required"
+            _cashLoanApplicationState.value =
+                _cashLoanApplicationState.value.copy(
+                    validationErrors = errors,
+                )
+        }
+
+        autoSaveDraft()
+    }
+
+// ========== VALIDATION & DRAFT MANAGEMENT ==========
+
+    /**
+     * Validates the current step and updates validation errors.
+     */
+    private fun validateCurrentStep() {
+        val currentState = _cashLoanApplicationState.value
+        val application = buildApplicationFromState(currentState)
+
+        val validationResult = application.validateCurrentStep()
+
+        if (!validationResult.isValid) {
+            val errors = validationResult.errors.associateBy { it }
+            _cashLoanApplicationState.value =
+                currentState.copy(
+                    validationErrors = errors,
+                    errorMessage = "Please fix the errors before proceeding",
+                )
+        }
+    }
+
+    /**
+     * Clears all validation errors.
+     */
+    private fun clearValidationErrors() {
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                validationErrors = emptyMap(),
+                errorMessage = null,
+            )
+    }
+
+    /**
+     * Auto-saves the draft application.
+     * Debounced to avoid excessive saves.
+     */
+    private var autoSaveJob: Job? = null
+
+    private fun autoSaveDraft() {
+        autoSaveJob?.cancel()
+        autoSaveJob =
+            viewModelScope.launch {
+                delay(1000) // Debounce for 1 second
+
+                _cashLoanApplicationState.value = _cashLoanApplicationState.value.copy(isSaving = true)
+
+                val currentState = _cashLoanApplicationState.value
+                val application = buildApplicationFromState(currentState)
+
+                val result = saveCashLoanDraftUseCase(application)
+
+                when (result) {
+                    is com.soshopay.domain.repository.Result.Success -> {
+                        _cashLoanApplicationState.value =
+                            _cashLoanApplicationState.value.copy(
+                                isSaving = false,
+                                lastAutoSaveTime = System.currentTimeMillis(),
+                            )
+                    }
+                    is com.soshopay.domain.repository.Result.Error -> {
+                        _cashLoanApplicationState.value =
+                            _cashLoanApplicationState.value.copy(
+                                isSaving = false,
+                            )
+                    }
+                    is com.soshopay.domain.repository.Result.Loading -> {
+                        // Continue showing saving state
+                    }
+                }
+            }
+    }
+
+    /**
+     * Manually saves the draft.
+     */
+    private fun saveDraft() {
+        viewModelScope.launch {
+            _cashLoanApplicationState.value = _cashLoanApplicationState.value.copy(isSaving = true)
+
+            val currentState = _cashLoanApplicationState.value
+            val application = buildApplicationFromState(currentState)
+
+            val result = saveCashLoanDraftUseCase(application)
+
+            when (result) {
+                is com.soshopay.domain.repository.Result.Success -> {
+                    _cashLoanApplicationState.value =
+                        _cashLoanApplicationState.value.copy(
+                            isSaving = false,
+                            lastAutoSaveTime = System.currentTimeMillis(),
+                            errorMessage = null,
+                        )
+                }
+                is com.soshopay.domain.repository.Result.Error -> {
+                    _cashLoanApplicationState.value =
+                        _cashLoanApplicationState.value.copy(
+                            isSaving = false,
+                            errorMessage = "Failed to save draft: ${getErrorMessage(result.exception)}",
+                        )
+                }
+                is com.soshopay.domain.repository.Result.Loading -> {
+                    // Continue showing saving state
+                }
+            }
+        }
+    }
+
+    /**
+     * Loads an existing draft application.
+     */
+    private fun loadCashLoanDraft() {
+        viewModelScope.launch {
+            _cashLoanApplicationState.value = _cashLoanApplicationState.value.copy(isLoading = true)
+
+            val userResult = getUserProfileUseCase()
+
+            when (userResult) {
+                is Result.Success -> {
+                    val userId = userResult.data.id
+                    val draftResult = getCashLoanDraftUseCase(userId)
+
+                    when (draftResult) {
+                        is com.soshopay.domain.repository.Result.Success -> {
+                            val draft = draftResult.data
+                            if (draft != null) {
+                                _cashLoanApplicationState.value =
+                                    _cashLoanApplicationState.value.copy(
+                                        application = draft,
+                                        currentStep = draft.currentStep,
+                                        loanAmount = draft.loanAmount.toString(),
+                                        loanPurpose = draft.loanPurpose,
+                                        repaymentPeriod = draft.repaymentPeriod,
+                                        monthlyIncome = draft.monthlyIncome.toString(),
+                                        employerIndustry = draft.employerIndustry,
+                                        collateralType = draft.collateralType,
+                                        collateralValue = draft.collateralValue.toString(),
+                                        collateralDetails = draft.collateralDetails,
+                                        collateralDocuments = draft.collateralDocuments,
+                                        calculatedTerms = draft.calculatedTerms,
+                                        isLoading = false,
+                                    )
+                            } else {
+                                _cashLoanApplicationState.value =
+                                    _cashLoanApplicationState.value.copy(
+                                        isLoading = false,
+                                        errorMessage = "No draft found",
+                                    )
+                            }
+                        }
+                        is com.soshopay.domain.repository.Result.Error -> {
+                            _cashLoanApplicationState.value =
+                                _cashLoanApplicationState.value.copy(
+                                    isLoading = false,
+                                    errorMessage = getErrorMessage(draftResult.exception),
+                                )
+                        }
+                        is com.soshopay.domain.repository.Result.Loading -> {
+                            // Continue showing loading state
+                        }
+                    }
+                }
+                is Result.Error -> {
+                    _cashLoanApplicationState.value =
+                        _cashLoanApplicationState.value.copy(
+                            isLoading = false,
+                            errorMessage = getErrorMessage(userResult.exception),
+                        )
+                }
+                is Result.Loading -> {
+                    // Continue showing loading state
+                }
+            }
+        }
+    }
+
+    /**
+     * Builds a CashLoanApplication object from the current UI state.
+     */
+    @OptIn(ExperimentalTime::class)
+    private fun buildApplicationFromState(state: CashLoanApplicationState): CashLoanApplication {
+        val existingApplication = state.application ?: CashLoanApplication.createDraft("")
+
+        return existingApplication.copy(
+            currentStep = state.currentStep,
+            loanAmount = state.loanAmount.toDoubleOrNull() ?: 0.0,
+            loanPurpose = state.loanPurpose,
+            repaymentPeriod = state.repaymentPeriod,
+            monthlyIncome = state.monthlyIncome.toDoubleOrNull() ?: 0.0,
+            employerIndustry = state.employerIndustry,
+            collateralType = state.collateralType,
+            collateralValue = state.collateralValue.toDoubleOrNull() ?: 0.0,
+            collateralDetails = state.collateralDetails,
+            collateralDocuments = state.collateralDocuments,
+            calculatedTerms = state.calculatedTerms,
+            updatedAt = Clock.System.now().toEpochMilliseconds(),
+        )
+    }
+
+// ========== STEP 4: TERMS CALCULATION ==========
+
+    /**
+     * Calculates the loan terms based on the application data.
+     */
+    private fun calculateCashLoanTerms() {
+        viewModelScope.launch {
+            val currentState = _cashLoanApplicationState.value
+
+            _cashLoanApplicationState.value = currentState.copy(isCalculating = true)
+
+            val request =
+                CashLoanCalculationRequest(
+                    loanAmount = currentState.loanAmount.toDoubleOrNull() ?: 0.0,
+                    repaymentPeriod = currentState.repaymentPeriod,
+                    employerIndustry = currentState.employerIndustry,
+                    collateralValue = currentState.collateralValue.toDoubleOrNull() ?: 0.0,
+                    monthlyIncome = currentState.monthlyIncome.toDoubleOrNull() ?: 0.0,
+                )
+
+            val result =
+                calculateCashLoanTermsUseCase(
+                    request.loanAmount,
+                    request.repaymentPeriod,
+                    request.employerIndustry,
+                    request.collateralValue,
+                    request.monthlyIncome,
+                )
+
+            when (result) {
+                is com.soshopay.domain.repository.Result.Success -> {
+                    _cashLoanApplicationState.value =
+                        currentState.copy(
+                            isCalculating = false,
+                            calculatedTerms = result.data,
+                            showTermsDialog = true,
+                            errorMessage = null,
+                        )
+                    autoSaveDraft()
+                }
+                is com.soshopay.domain.repository.Result.Error -> {
+                    _cashLoanApplicationState.value =
+                        currentState.copy(
+                            isCalculating = false,
+                            errorMessage = getErrorMessage(result.exception),
+                        )
+                }
+                is com.soshopay.domain.repository.Result.Loading -> {
+                    // Continue showing calculating state
+                }
+            }
+        }
+    }
+
+    /**
+     * Shows the terms review dialog.
+     */
+    private fun showTermsDialog() {
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                showTermsDialog = true,
+            )
+    }
+
+    /**
+     * Dismisses the terms review dialog.
+     */
+    private fun dismissTermsDialog() {
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                showTermsDialog = false,
+            )
+    }
+
+    /**
+     * User accepts the calculated terms and moves to confirmation step.
+     */
+    private fun acceptTerms() {
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                showTermsDialog = false,
+                currentStep = CashLoanApplicationStep.CONFIRMATION,
+            )
+        autoSaveDraft()
+    }
+
+// ========== STEP 5: CONFIRMATION & SUBMISSION ==========
+
+    /**
+     * Shows the final confirmation dialog.
+     */
+    private fun showConfirmationDialog() {
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                showConfirmationDialog = true,
+            )
+    }
+
+    /**
+     * Dismisses the final confirmation dialog.
+     */
+    private fun dismissConfirmationDialog() {
+        _cashLoanApplicationState.value =
+            _cashLoanApplicationState.value.copy(
+                showConfirmationDialog = false,
+            )
+    }
+
+    /**
+     * Submits the cash loan application.
+     */
+    private fun submitCashLoanApplication() {
+        viewModelScope.launch {
+            val currentState = _cashLoanApplicationState.value
+
+            _cashLoanApplicationState.value =
+                currentState.copy(
+                    isLoading = true,
+                    showConfirmationDialog = false,
+                )
+
+            val application =
+                buildApplicationFromState(currentState).copy(
+                    acceptedTerms = true,
+                    status = ApplicationStatus.SUBMITTED,
+                )
+
+            val result = submitCashLoanApplicationUseCase(application)
+
+            when (result) {
+                is com.soshopay.domain.repository.Result.Success -> {
+                    _cashLoanApplicationState.value =
+                        currentState.copy(
+                            isLoading = false,
+                            errorMessage = null,
+                        )
+
+                    // Navigate to loan history
+                    viewModelScope.launch {
+                        _navigationEvents.emit(LoanPaymentNavigation.ToLoanHistory)
+                    }
+                }
+                is com.soshopay.domain.repository.Result.Error -> {
+                    _cashLoanApplicationState.value =
+                        currentState.copy(
+                            isLoading = false,
+                            errorMessage = "Failed to submit application: ${getErrorMessage(result.exception)}",
+                        )
+                }
+                is com.soshopay.domain.repository.Result.Loading -> {
+                    // Continue showing loading state
+                }
+            }
+        }
+    }
+
+    /**
+     * Cancels the application and navigates back.
+     */
+    private fun cancelApplication() {
+        viewModelScope.launch {
+            _navigationEvents.emit(LoanPaymentNavigation.Back)
         }
     }
 
@@ -839,36 +1501,6 @@ class LoanViewModel(
     }
 
     // ========== VALIDATION HELPERS ==========
-
-    private fun validateLoanAmount(amount: String): String? =
-        when {
-            amount.isEmpty() -> "Loan amount is required"
-            amount.toDoubleOrNull() == null -> "Invalid amount format"
-            amount.toDouble() < 100 -> "Minimum loan amount is $100"
-            amount.toDouble() > 50000 -> "Maximum loan amount is $50,000"
-            else -> null
-        }
-
-    private fun validateLoanPurpose(purpose: String): String? =
-        when {
-            purpose.isEmpty() -> "Loan purpose is required"
-            purpose.length < 10 -> "Please provide more details about loan purpose"
-            else -> null
-        }
-
-    private fun validateRepaymentPeriod(period: String): String? =
-        when {
-            period.isEmpty() -> "Repayment period is required"
-            else -> null
-        }
-
-    private fun validateMonthlyIncome(income: String): String? =
-        when {
-            income.isEmpty() -> "Monthly income is required"
-            income.toDoubleOrNull() == null -> "Invalid income format"
-            income.toDouble() < 300 -> "Minimum monthly income is $300"
-            else -> null
-        }
 
     private fun clearError() {
         _loanDashboardState.value = _loanDashboardState.value.copy(errorMessage = null)
