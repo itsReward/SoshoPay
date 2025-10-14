@@ -131,6 +131,6 @@ fun createHttpClientForEnvironment(environment: Environment): HttpClient = creat
  * Extension function to create HttpClient for local development with custom settings
  */
 fun createLocalHttpClient(
-    ip: String = "10.235.111.123",
+    ip: String = "10.121.164.123",
     port: Int = 8080,
 ): HttpClient = createHttpClient(ApiConfigFactory.createLocal(ip, port))

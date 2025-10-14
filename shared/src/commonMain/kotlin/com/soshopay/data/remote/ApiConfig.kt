@@ -52,7 +52,7 @@ interface ApiConfig {
  * Network security config must allow cleartext traffic for this to work.
  */
 class LocalApiConfig(
-    private val localIp: String = "10.235.111.123",
+    private val localIp: String = "10.121.164.123",
     private val port: Int = 8080,
 ) : ApiConfig {
     override val baseUrl: String = "http://$localIp:$port/"

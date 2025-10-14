@@ -84,6 +84,7 @@ val androidModule =
                 downloadLoanAgreementUseCase = get(),
                 validateProfileCompletionUseCase = get(),
                 getUserProfileUseCase = get(),
+                uploadCollateralDocumentUseCase = get(),
             )
         }
 
