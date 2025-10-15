@@ -8,6 +8,7 @@ import com.soshopay.domain.model.LoanDetails
 import com.soshopay.domain.model.LoanStatus
 import com.soshopay.domain.model.PayGoLoanTerms
 import com.soshopay.domain.model.PayGoProduct
+import com.soshopay.domain.model.PayGoStep
 import com.soshopay.domain.model.Payment
 import com.soshopay.domain.model.PaymentMethodInfo
 import com.soshopay.domain.model.PaymentSchedule
@@ -79,17 +80,6 @@ data class PayGoApplicationState(
             PayGoStep.GUARANTOR_INFO -> guarantorInfo != null && guarantorInfo.isComplete()
             PayGoStep.TERMS_REVIEW -> calculatedTerms != null
         }
-}
-
-/**
- * Enum for PayGo application steps
- */
-enum class PayGoStep {
-    CATEGORY_SELECTION,
-    PRODUCT_SELECTION,
-    APPLICATION_DETAILS,
-    GUARANTOR_INFO,
-    TERMS_REVIEW,
 }
 
 /**

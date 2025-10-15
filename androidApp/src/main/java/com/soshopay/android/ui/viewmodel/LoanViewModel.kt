@@ -9,7 +9,6 @@ import com.soshopay.android.ui.state.LoanHistoryState
 import com.soshopay.android.ui.state.LoanPaymentEvent
 import com.soshopay.android.ui.state.LoanPaymentNavigation
 import com.soshopay.android.ui.state.PayGoApplicationState
-import com.soshopay.android.ui.state.PayGoStep
 import com.soshopay.domain.model.Address
 import com.soshopay.domain.model.ApplicationStatus
 import com.soshopay.domain.model.CashLoanApplication
@@ -24,6 +23,7 @@ import com.soshopay.domain.model.LoanType
 import com.soshopay.domain.model.PayGoCalculationRequest
 import com.soshopay.domain.model.PayGoLoanApplication
 import com.soshopay.domain.model.PayGoProduct
+import com.soshopay.domain.model.PayGoStep
 import com.soshopay.domain.model.VerificationStatus
 import com.soshopay.domain.usecase.loan.CalculateCashLoanTermsUseCase
 import com.soshopay.domain.usecase.loan.CalculatePayGoTermsUseCase
@@ -184,8 +184,8 @@ class LoanViewModel(
             is LoanPaymentEvent.UpdatePayGoRepaymentPeriod -> updatePayGoRepaymentPeriod(event.period)
             is LoanPaymentEvent.UpdateSalaryBand -> updateSalaryBand(event.band)
             is LoanPaymentEvent.UpdateGuarantorInfo -> updateGuarantorInfo(event.guarantor)
-            is LoanPaymentEvent.NextPayGoStep -> nextPayGoStep(event.step)
-            is LoanPaymentEvent.PreviousPayGoStep -> previousPayGoStep(event.step)
+            is LoanPaymentEvent.NextPayGoStep -> nextPayGoStep()
+            is LoanPaymentEvent.PreviousPayGoStep -> previousPayGoStep()
             is LoanPaymentEvent.CalculatePayGoTerms -> calculatePayGoTerms()
             is LoanPaymentEvent.SubmitPayGoApplication -> submitPayGoApplication()
 
@@ -1273,39 +1273,42 @@ class LoanViewModel(
         _payGoApplicationState.value = _payGoApplicationState.value.copy(guarantorInfo = guarantor)
     }
 
-    private fun nextPayGoStep(step: PayGoStep? = null) {
+    /**
+     * Moves to the next PayGo step in the wizard.
+     */
+    private fun nextPayGoStep(step: PayGoStep) {
         val currentState = _payGoApplicationState.value
 
-        // If step is provided, use it directly (for compatibility)
-        if (step != null) {
+        // Validate current step before proceeding
+        if (!currentState.canProceedToNextStep()) {
+            // Show validation error
             _payGoApplicationState.value =
                 currentState.copy(
-                    currentStep = step,
-                    validationErrors = emptyMap(),
+                    errorMessage = "Please complete all required fields before proceeding",
                 )
-            savePayGoDraft()
             return
         }
 
-        // Otherwise, calculate next step based on current step
-        // ... validation and automatic next step logic
+        // Use the provided step directly
+        _payGoApplicationState.value =
+            currentState.copy(
+                currentStep = step,
+                errorMessage = null,
+                validationErrors = emptyMap(),
+            )
     }
 
-    private fun previousPayGoStep(step: PayGoStep? = null) {
-        val currentState = _payGoApplicationState.value
-
-        // If step is provided, use it directly (for compatibility)
-        if (step != null) {
-            _payGoApplicationState.value =
-                currentState.copy(
-                    currentStep = step,
-                    validationErrors = emptyMap(),
-                )
-            return
-        }
-
-        // Otherwise, calculate previous step
-        // ... automatic previous step logic
+    /**
+     * Moves to the previous PayGo step in the wizard.
+     */
+    private fun previousPayGoStep(step: PayGoStep) {
+        // Use the provided step directly
+        _payGoApplicationState.value =
+            _payGoApplicationState.value.copy(
+                currentStep = step,
+                errorMessage = null,
+                validationErrors = emptyMap(),
+            )
     }
 
     // ========== LOAN HISTORY OPERATIONS ==========

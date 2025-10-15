@@ -15,9 +15,9 @@ import androidx.compose.ui.unit.dp
 import com.soshopay.android.ui.component.loans.paygo.*
 import com.soshopay.android.ui.state.LoanPaymentEvent
 import com.soshopay.android.ui.state.LoanPaymentNavigation
-import com.soshopay.android.ui.state.PayGoStep
 import com.soshopay.android.ui.theme.SoshoPayTheme
 import com.soshopay.android.ui.viewmodel.LoanViewModel
+import com.soshopay.domain.model.PayGoStep
 import org.koin.androidx.compose.koinViewModel
 
 /**
@@ -153,7 +153,7 @@ fun PayGoApplicationScreen(
                     },
                     colors =
                         TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
+                            containerColor = MaterialTheme.colorScheme.secondary,
                             titleContentColor = MaterialTheme.colorScheme.onSurface,
                         ),
                 )
