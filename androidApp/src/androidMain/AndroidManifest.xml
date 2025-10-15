@@ -13,7 +13,9 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_FILE_PROVIDER"/>
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_DOCUMENTS" />
+
 
     <!-- For reading documents/PDFs from shared storage -->
     <!-- Note: READ_MEDIA_DOCUMENTS requires targetSdk 34+ -->

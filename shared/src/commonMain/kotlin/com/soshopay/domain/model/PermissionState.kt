@@ -38,6 +38,7 @@ enum class AppPermission(
 ) {
     READ_MEDIA_IMAGES("Access to photos and images"),
     READ_MEDIA_VIDEO("Access to videos"),
+    READ_MEDIA_DOCUMENTS("Access to documents and PDFs"), // ADDED for PDF support
     READ_MEDIA_VISUAL_USER_SELECTED("Access to selected media"),
     READ_EXTERNAL_STORAGE("Access to files and documents"),
     CAMERA("Access to camera"),
@@ -50,6 +51,7 @@ enum class AppPermission(
         when (this) {
             READ_MEDIA_IMAGES -> "Photos"
             READ_MEDIA_VIDEO -> "Videos"
+            READ_MEDIA_DOCUMENTS -> "Documents"
             READ_MEDIA_VISUAL_USER_SELECTED -> "Selected Media"
             READ_EXTERNAL_STORAGE -> "Files"
             CAMERA -> "Camera"

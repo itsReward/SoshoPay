@@ -20,13 +20,14 @@ import kotlinx.coroutines.withContext
  *
  * This implementation handles Android's complex permission system across different
  * API levels, including the transition from READ_EXTERNAL_STORAGE to granular
- * media permissions (READ_MEDIA_IMAGES, READ_MEDIA_VIDEO) in Android 13+.
+ * media permissions (READ_MEDIA_IMAGES, READ_MEDIA_VIDEO, READ_MEDIA_DOCUMENTS) in Android 13+.
  *
  * Key features:
  * - API level-aware permission handling
- * - Support for Android 6.0 (API 23) through Android 14+ (API 34+)
+ * - Support for Android 6.0 (API 23) through Android 16 (API 35)
  * - Graceful degradation for older Android versions
  * - Comprehensive error handling and logging
+ * - Document (PDF) support for Android 13+
  *
  * @property context Application context for permission checks
  */
@@ -53,6 +54,15 @@ class AndroidPermissionManager(
             AppPermission.READ_MEDIA_VIDEO -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     Manifest.permission.READ_MEDIA_VIDEO
+                } else {
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                }
+            }
+            // CRITICAL FIX: Add support for READ_MEDIA_DOCUMENTS (Android 13+)
+            AppPermission.READ_MEDIA_DOCUMENTS -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    // READ_MEDIA_DOCUMENTS is available from API 33 (Android 13)
+                    "android.permission.READ_MEDIA_DOCUMENTS"
                 } else {
                     Manifest.permission.READ_EXTERNAL_STORAGE
                 }
@@ -146,14 +156,16 @@ class AndroidPermissionManager(
         }
     }
 
+    /**
+     * CRITICAL FIX: Updated to include READ_MEDIA_DOCUMENTS for PDF support
+     */
     override fun getStoragePermissions(): List<AppPermission> =
         when {
             // Android 13+ (API 33+) - Use granular media permissions
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
                 listOf(
-                    AppPermission.READ_MEDIA_IMAGES,
-                    // For video support (if needed in the future)
-                    // AppPermission.READ_MEDIA_VIDEO
+                    AppPermission.READ_MEDIA_IMAGES, // For images (JPEG, PNG)
+                    AppPermission.READ_MEDIA_DOCUMENTS, // For PDFs and documents
                 )
             }
             // Android 6.0 - Android 12 (API 23-32)
@@ -174,7 +186,9 @@ class AndroidPermissionManager(
 
     override suspend fun hasStoragePermission(): Boolean {
         val permissions = getStoragePermissions()
-        return permissions.all { isPermissionGranted(it) }
+        val results = permissions.all { isPermissionGranted(it) }
+        Logger.d("Storage permissions check: $results for permissions: $permissions", TAG)
+        return results
     }
 
     override suspend fun hasImagePermission(): Boolean {

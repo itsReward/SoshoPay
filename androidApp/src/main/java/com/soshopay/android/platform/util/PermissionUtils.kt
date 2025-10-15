@@ -8,6 +8,8 @@ import android.os.Build
  *
  * Provides helper functions for determining required permissions
  * based on Android version and use case.
+ *
+ * UPDATED: Now includes support for READ_MEDIA_DOCUMENTS for PDF access on Android 13+
  */
 object PermissionUtils {
     /**
@@ -35,6 +37,20 @@ object PermissionUtils {
         }
 
     /**
+     * CRITICAL FIX: Gets the required permissions for accessing documents (PDFs, etc.)
+     * based on Android version.
+     *
+     * @return Array of permission strings needed for document access
+     */
+    fun getDocumentPermissions(): Array<String> =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ requires READ_MEDIA_DOCUMENTS for PDFs
+            arrayOf("android.permission.READ_MEDIA_DOCUMENTS")
+        } else {
+            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+
+    /**
      * Gets the required permissions for accessing images and videos.
      *
      * @return Array of permission strings needed for media access
@@ -50,17 +66,17 @@ object PermissionUtils {
         }
 
     /**
-     * Gets all storage-related permissions based on Android version.
-     * This includes images, videos, and documents.
+     * CRITICAL FIX: Gets all storage-related permissions including documents.
+     * This is what CollateralDocumentUploader should use.
      *
      * @return Array of permission strings needed for full storage access
      */
     fun getAllStoragePermissions(): Array<String> =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             arrayOf(
-                Manifest.permission.READ_MEDIA_IMAGES,
-                Manifest.permission.READ_MEDIA_VIDEO,
-                // Note: READ_MEDIA_AUDIO can be added if you need audio files
+                Manifest.permission.READ_MEDIA_IMAGES, // For images
+                "android.permission.READ_MEDIA_DOCUMENTS", // For PDFs and documents
+                // Note: READ_MEDIA_VIDEO can be added if you need video files
             )
         } else {
             arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
@@ -93,6 +109,9 @@ object PermissionUtils {
 
             Manifest.permission.READ_MEDIA_VIDEO ->
                 "We need access to your videos to allow you to upload video files as collateral documents."
+
+            "android.permission.READ_MEDIA_DOCUMENTS" ->
+                "We need access to your documents to allow you to upload PDFs and other documents as collateral."
 
             Manifest.permission.READ_EXTERNAL_STORAGE ->
                 "We need access to your files to allow you to upload documents and images."

@@ -34,11 +34,13 @@ import java.io.InputStream
 /**
  * Enhanced Collateral Document Uploader Component with Permission Handling.
  *
+ * FIXED: Proper permission denial detection for Android 13+
+ *
  * Features:
  * - Automatic permission checks before file picking
  * - Permission rationale dialog
  * - Settings navigation for permanently denied permissions
- * - File picker for images and PDFs
+ * - File picker for images and PDFs (unified)
  * - Upload progress indicator
  * - List of uploaded documents with preview
  * - Remove document functionality
@@ -66,11 +68,13 @@ fun CollateralDocumentUploader(
     permissionManager: PermissionManager = koinInject(),
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     // Permission state
     var showPermissionRationale by remember { mutableStateOf(false) }
     var showPermissionDeniedDialog by remember { mutableStateOf(false) }
     var permissionGranted by remember { mutableStateOf(false) }
+    var permissionDenialCount by remember { mutableStateOf(0) }
 
     // Check permission on composition
     LaunchedEffect(Unit) {
@@ -82,32 +86,42 @@ fun CollateralDocumentUploader(
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestMultiplePermissions(),
         ) { permissions ->
-            val allGranted = permissions.values.all { it }
-            permissionGranted = allGranted
+            scope.launch {
+                val allGranted = permissions.values.all { it }
+                permissionGranted = allGranted
 
-            if (!allGranted) {
-                // Check if any permission was permanently denied
-                val anyPermanentlyDenied =
-                    permissions.any { (permission, granted) ->
-                        !granted &&
-                            !androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(
-                                context as androidx.activity.ComponentActivity,
-                                permission,
-                            )
+                if (!allGranted) {
+                    permissionDenialCount++
+
+                    // CRITICAL FIX: Only show "permanently denied" after 2+ denials
+                    // First denial = show rationale
+                    // Second+ denial = assume permanent denial
+                    if (permissionDenialCount >= 2) {
+                        showPermissionDeniedDialog = true
+                    } else {
+                        // First denial - just allow them to try again
+                        // The system will handle showing rationale on next request
                     }
-
-                if (anyPermanentlyDenied) {
-                    showPermissionDeniedDialog = true
                 }
             }
         }
 
-    // File picker launcher
+    // CRITICAL FIX: Use OpenDocument instead of GetContent for better document support
     val filePickerLauncher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.GetContent(),
+            contract = ActivityResultContracts.OpenDocument(),
         ) { uri: Uri? ->
             uri?.let {
+                try {
+                    // Grant persistent read permission
+                    context.contentResolver.takePersistableUriPermission(
+                        uri,
+                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    )
+                } catch (e: Exception) {
+                    // Persistable permission not available, continue anyway
+                }
+
                 try {
                     val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
                     val fileBytes = inputStream?.readBytes()
@@ -117,7 +131,7 @@ fun CollateralDocumentUploader(
                     if (fileBytes != null && fileName != null) {
                         // Validate file size (5MB max)
                         if (fileBytes.size > CollateralDocument.MAX_FILE_SIZE_BYTES) {
-                            // Show error via callback or toast
+                            // Error is handled by parent component via error parameter
                             return@rememberLauncherForActivityResult
                         }
 
@@ -126,21 +140,22 @@ fun CollateralDocumentUploader(
 
                     inputStream?.close()
                 } catch (e: Exception) {
-                    // Handle error
                     e.printStackTrace()
                 }
             }
         }
 
-    // Function to request permissions
+    // CRITICAL FIX: Request both READ_MEDIA_IMAGES and READ_MEDIA_DOCUMENTS
     val requestPermissions = {
         val permissions =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // Android 13+ requires granular permissions
                 arrayOf(
-                    Manifest.permission.READ_MEDIA_IMAGES,
-                    // Add READ_MEDIA_VIDEO if you need video support
+                    Manifest.permission.READ_MEDIA_IMAGES, // For images
+                    "android.permission.READ_MEDIA_DOCUMENTS", // For PDFs
                 )
             } else {
+                // Android 12 and below use legacy permission
                 arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
             }
         permissionLauncher.launch(permissions)
@@ -148,107 +163,159 @@ fun CollateralDocumentUploader(
 
     // Function to handle file picker click
     val onPickerClick = {
-        if (permissionGranted) {
-            filePickerLauncher.launch("image/*,application/pdf")
-        } else {
-            // Check if we should show rationale
-            val shouldShowRationale =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(
-                        context as androidx.activity.ComponentActivity,
-                        Manifest.permission.READ_MEDIA_IMAGES,
-                    )
-                } else {
-                    androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(
-                        context as androidx.activity.ComponentActivity,
-                        Manifest.permission.READ_EXTERNAL_STORAGE,
-                    )
-                }
-
-            if (shouldShowRationale) {
-                showPermissionRationale = true
+        scope.launch {
+            if (permissionGranted) {
+                // CRITICAL FIX: OpenDocument accepts an array of MIME types
+                filePickerLauncher.launch(
+                    arrayOf(
+                        "image/*", // All image types
+                        "application/pdf", // PDF documents
+                    ),
+                )
             } else {
+                // Request permissions directly - system will show rationale if needed
                 requestPermissions()
             }
         }
     }
 
-    Column(modifier = modifier) {
-        // Permission Rationale Dialog
-        if (showPermissionRationale) {
-            AlertDialog(
-                onDismissRequest = { showPermissionRationale = false },
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Folder,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        // Upload Button
+        OutlinedCard(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !isUploading) { onPickerClick() },
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CloudUpload,
+                    contentDescription = "Upload",
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+
+                if (isUploading) {
+                    CircularProgressIndicator(
+                        progress = { uploadProgress },
+                        modifier = Modifier.size(40.dp),
                     )
-                },
-                title = {
                     Text(
-                        text = "Storage Permission Required",
-                        style = MaterialTheme.typography.headlineSmall,
-                    )
-                },
-                text = {
-                    Text(
-                        text =
-                            "To upload collateral documents, we need access to your photos and files. " +
-                                "This allows you to select images and PDFs from your device to support your loan application.",
+                        text = "${(uploadProgress * 100).toInt()}%",
                         style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
                     )
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showPermissionRationale = false
-                            requestPermissions()
-                        },
-                    ) {
-                        Text("Grant Permission")
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = { showPermissionRationale = false },
-                    ) {
-                        Text("Cancel")
-                    }
-                },
-            )
+                } else {
+                    Text(
+                        text = "Tap to upload documents",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = "Images (JPEG, PNG) or PDFs up to 5MB",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
         }
 
-        // Permission Denied Dialog (Navigate to Settings)
+        // Error message
+        if (error != null) {
+            Card(
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Error,
+                        contentDescription = "Error",
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                    Text(
+                        text = error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+            }
+        }
+
+        // Uploaded documents list
+        if (documents.isNotEmpty()) {
+            Text(
+                text = "Uploaded Documents (${documents.size})",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(documents) { document ->
+                    DocumentCard(
+                        document = document,
+                        onRemove = { onDocumentRemoved(document.id) },
+                    )
+                }
+            }
+        }
+
+        // Permission Permanently Denied Dialog
+        // FIXED: Better messaging for Android 13+
         if (showPermissionDeniedDialog) {
             AlertDialog(
                 onDismissRequest = { showPermissionDeniedDialog = false },
                 icon = {
                     Icon(
                         imageVector = Icons.Default.Warning,
-                        contentDescription = null,
+                        contentDescription = "Warning",
                         tint = MaterialTheme.colorScheme.error,
                     )
                 },
-                title = {
-                    Text(
-                        text = "Permission Denied",
-                        style = MaterialTheme.typography.headlineSmall,
-                    )
-                },
+                title = { Text("Permission Required") },
                 text = {
-                    Text(
-                        text =
-                            "Storage permission is required to upload documents. " +
-                                "Please enable it in your device settings to continue.",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "To upload documents, you need to grant the following permissions:",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = "• Photos and videos\n• Files and media",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = "\nPlease enable these permissions in your device settings:",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = "Settings → Apps → SoshoPay → Permissions",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 },
                 confirmButton = {
-                    TextButton(
+                    Button(
                         onClick = {
                             showPermissionDeniedDialog = false
-                            kotlinx.coroutines.GlobalScope.launch {
+                            scope.launch {
                                 permissionManager.openAppSettings()
                             }
                         },
@@ -265,153 +332,38 @@ fun CollateralDocumentUploader(
                 },
             )
         }
-
-        // Upload button
-        OutlinedCard(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .clickable(enabled = !isUploading) {
-                        onPickerClick()
-                    },
-            border =
-                BorderStroke(
-                    width = 2.dp,
-                    color =
-                        if (error != null) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.outline
-                        },
-                ),
-            colors =
-                CardDefaults.cardColors(
-                    containerColor = Color.Transparent,
-                ),
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (isUploading) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        CircularProgressIndicator(
-                            progress = { uploadProgress },
-                            modifier = Modifier.size(40.dp),
-                        )
-                        Text(
-                            text = "Uploading... ${(uploadProgress * 100).toInt()}%",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                } else {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CloudUpload,
-                            contentDescription = "Upload",
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text =
-                                if (!permissionGranted) {
-                                    "Tap to grant permission"
-                                } else {
-                                    "Tap to upload documents"
-                                },
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Center,
-                        )
-                        Text(
-                            text = "Images or PDFs (Max 5MB)",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-            }
-        }
-
-        // Error message
-        if (error != null) {
-            Text(
-                text = error,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = 4.dp, start = 16.dp),
-            )
-        }
-
-        // Uploaded documents
-        if (documents.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Uploaded Documents (${documents.size})",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(documents) { document ->
-                    DocumentPreviewCard(
-                        document = document,
-                        onRemove = { onDocumentRemoved(document.id) },
-                    )
-                }
-            }
-        }
     }
 }
 
 /**
- * Preview card for a single document.
+ * Document card displaying uploaded document with preview and remove button.
  */
 @Composable
-private fun DocumentPreviewCard(
+private fun DocumentCard(
     document: CollateralDocument,
     onRemove: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier =
-            modifier
-                .width(120.dp)
-                .height(140.dp),
+        modifier = Modifier.size(width = 140.dp, height = 180.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 // Document preview
                 Box(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .height(80.dp)
+                            .height(120.dp)
                             .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (document.isImage()) {
                         AsyncImage(
                             model = document.fileUrl,
-                            contentDescription = "Document preview",
+                            contentDescription = document.fileName,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                         )
