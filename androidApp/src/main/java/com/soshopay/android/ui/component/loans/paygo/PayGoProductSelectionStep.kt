@@ -1,5 +1,6 @@
 package com.soshopay.android.ui.component.loans.paygo
 
+import android.content.res.Resources
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,11 +10,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.soshopay.android.R
 import com.soshopay.domain.model.PayGoProduct
 import java.text.NumberFormat
 import java.util.*
@@ -163,9 +167,10 @@ private fun ProductCard(
             CardDefaults.cardColors(
                 containerColor =
                     if (isSelected) {
-                        MaterialTheme.colorScheme.primaryContainer
+                        //MaterialTheme.colorScheme.primaryContainer
+                        colorResource(id = R.color.yec_fund_dark_orange)
                     } else {
-                        MaterialTheme.colorScheme.surface
+                        MaterialTheme.colorScheme.tertiary
                     },
             ),
         border =
@@ -244,7 +249,11 @@ private fun ProductCard(
                         text = currencyFormatter.format(product.price),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     )
 
                     if (!product.isAvailable) {
@@ -409,13 +418,19 @@ private fun ProductDetailsDialog(
                         text = currencyFormatter.format(product.getTotalCost()),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(R.color.yellow),
+                    contentColor = Color.White,
+                )
+            ) {
                 Text("Close")
             }
         },

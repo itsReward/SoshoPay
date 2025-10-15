@@ -10,9 +10,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.soshopay.android.R
 import com.soshopay.android.ui.component.loans.paygo.*
 import com.soshopay.android.ui.state.LoanPaymentEvent
 import com.soshopay.android.ui.state.LoanPaymentNavigation
@@ -438,6 +441,11 @@ private fun NavigationButtons(
             },
             enabled = canProceed && !isLoading,
             modifier = Modifier.weight(if (currentStep == PayGoStep.CATEGORY_SELECTION) 1f else 1f),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = colorResource(R.color.yellow),
+                    contentColor = Color.White,
+                ),
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
