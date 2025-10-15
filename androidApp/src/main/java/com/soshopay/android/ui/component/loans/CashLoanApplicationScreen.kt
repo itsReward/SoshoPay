@@ -72,27 +72,31 @@ fun CashLoanApplicationScreen(
     }
 
     // Calculate completed steps
-    val completedSteps = remember(applicationState) {
-        buildSet {
-            if (applicationState.loanAmount.isNotEmpty() &&
-                applicationState.loanPurpose.isNotEmpty() &&
-                applicationState.repaymentPeriod.isNotEmpty()) {
-                add(1)
-            }
-            if (applicationState.monthlyIncome.isNotEmpty() &&
-                applicationState.employerIndustry.isNotEmpty()) {
-                add(2)
-            }
-            if (applicationState.collateralType.isNotEmpty() &&
-                applicationState.collateralValue.isNotEmpty() &&
-                applicationState.collateralDocuments.isNotEmpty()) {
-                add(3)
-            }
-            if (applicationState.calculatedTerms != null) {
-                add(4)
+    val completedSteps =
+        remember(applicationState) {
+            buildSet {
+                if (applicationState.loanAmount.isNotEmpty() &&
+                    applicationState.loanPurpose.isNotEmpty() &&
+                    applicationState.repaymentPeriod.isNotEmpty()
+                ) {
+                    add(1)
+                }
+                if (applicationState.monthlyIncome.isNotEmpty() &&
+                    applicationState.employerIndustry.isNotEmpty()
+                ) {
+                    add(2)
+                }
+                if (applicationState.collateralType.isNotEmpty() &&
+                    applicationState.collateralValue.isNotEmpty() &&
+                    applicationState.collateralDocuments.isNotEmpty()
+                ) {
+                    add(3)
+                }
+                if (applicationState.calculatedTerms != null) {
+                    add(4)
+                }
             }
         }
-    }
 
     SoshoPayTheme {
         Scaffold(
@@ -103,14 +107,14 @@ fun CashLoanApplicationScreen(
                             Text(
                                 text = "Cash Loan Application",
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
                             )
                             // Auto-save indicator
                             applicationState.getAutoSaveMessage()?.let { message ->
                                 Text(
                                     text = message,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -123,53 +127,57 @@ fun CashLoanApplicationScreen(
                                 } else {
                                     viewModel.onEvent(LoanPaymentEvent.CancelApplication)
                                 }
-                            }
+                            },
                         ) {
                             Icon(
-                                imageVector = if (applicationState.currentStep.isFirstStep()) {
-                                    Icons.Default.Close
-                                } else {
-                                    Icons.Default.ArrowBack
-                                },
-                                contentDescription = "Back"
+                                imageVector =
+                                    if (applicationState.currentStep.isFirstStep()) {
+                                        Icons.Default.Close
+                                    } else {
+                                        Icons.Default.ArrowBack
+                                    },
+                                contentDescription = "Back",
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = if (isDarkMode) {
-                            MaterialTheme.colorScheme.surface
-                        } else {
-                            Color.White
-                        }
-                    )
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor =
+                                if (isDarkMode) {
+                                    MaterialTheme.colorScheme.secondary
+                                } else {
+                                    Color.White
+                                },
+                        ),
                 )
-            }
+            },
         ) { paddingValues ->
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        if (isDarkMode) {
-                            MaterialTheme.colorScheme.background
-                        } else {
-                            Color.White
-                        }
-                    )
-                    .padding(paddingValues)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            if (isDarkMode) {
+                                MaterialTheme.colorScheme.secondary
+                            } else {
+                                Color.White
+                            },
+                        ).padding(paddingValues),
             ) {
                 // Step Indicator
                 StepIndicator(
                     currentStep = applicationState.currentStep,
-                    completedSteps = completedSteps
+                    completedSteps = completedSteps,
                 )
 
                 Divider()
 
                 // Main content based on current step
                 Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
                 ) {
                     when (applicationState.currentStep) {
                         CashLoanApplicationStep.LOAN_DETAILS -> {
@@ -178,7 +186,7 @@ fun CashLoanApplicationScreen(
                                 loanPurpose = applicationState.loanPurpose,
                                 repaymentPeriod = applicationState.repaymentPeriod,
                                 validationErrors = applicationState.validationErrors,
-                                onEvent = viewModel::onEvent
+                                onEvent = viewModel::onEvent,
                             )
                         }
                         CashLoanApplicationStep.INCOME_EMPLOYMENT -> {
@@ -186,7 +194,7 @@ fun CashLoanApplicationScreen(
                                 monthlyIncome = applicationState.monthlyIncome,
                                 employerIndustry = applicationState.employerIndustry,
                                 validationErrors = applicationState.validationErrors,
-                                onEvent = viewModel::onEvent
+                                onEvent = viewModel::onEvent,
                             )
                         }
                         CashLoanApplicationStep.COLLATERAL_INFO -> {
@@ -198,7 +206,7 @@ fun CashLoanApplicationScreen(
                                 validationErrors = applicationState.validationErrors,
                                 uploadingDocument = applicationState.uploadingDocument,
                                 uploadProgress = applicationState.uploadProgress,
-                                onEvent = viewModel::onEvent
+                                onEvent = viewModel::onEvent,
                             )
                         }
                         CashLoanApplicationStep.TERMS_REVIEW -> {
@@ -206,7 +214,7 @@ fun CashLoanApplicationScreen(
                                 calculatedTerms = applicationState.calculatedTerms,
                                 isCalculating = applicationState.isCalculating,
                                 canCalculate = applicationState.canCalculateTerms(),
-                                onEvent = viewModel::onEvent
+                                onEvent = viewModel::onEvent,
                             )
                         }
                         CashLoanApplicationStep.CONFIRMATION -> {
@@ -221,19 +229,21 @@ fun CashLoanApplicationScreen(
                                 collateralDocuments = applicationState.collateralDocuments,
                                 calculatedTerms = applicationState.calculatedTerms,
                                 isSubmitting = applicationState.isLoading,
-                                onEvent = viewModel::onEvent
+                                onEvent = viewModel::onEvent,
                             )
                         }
                     }
 
                     // Loading overlay
                     if (applicationState.isAnyOperationInProgress() &&
-                        !applicationState.uploadingDocument) {
+                        !applicationState.uploadingDocument
+                    ) {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.3f)),
-                            contentAlignment = Alignment.Center
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.3f)),
+                            contentAlignment = Alignment.Center,
                         ) {
                             CircularProgressIndicator()
                         }
@@ -252,7 +262,7 @@ fun CashLoanApplicationScreen(
                         },
                         onNextClick = {
                             viewModel.onEvent(LoanPaymentEvent.NextStep)
-                        }
+                        },
                     )
                 }
             }
@@ -265,11 +275,11 @@ fun CashLoanApplicationScreen(
                         TextButton(
                             onClick = {
                                 viewModel.onEvent(LoanPaymentEvent.ClearValidationErrors)
-                            }
+                            },
                         ) {
                             Text("Dismiss")
                         }
-                    }
+                    },
                 ) {
                     Text(error)
                 }
@@ -286,21 +296,23 @@ private fun BottomNavigationButtons(
     currentStep: CashLoanApplicationStep,
     canProceed: Boolean,
     onPreviousClick: () -> Unit,
-    onNextClick: () -> Unit
+    onNextClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // Previous button (only show if not first step)
         if (!currentStep.isFirstStep()) {
             OutlinedButton(
                 onClick = onPreviousClick,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(56.dp)
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .height(56.dp),
             ) {
                 Text("Previous")
             }
@@ -310,15 +322,18 @@ private fun BottomNavigationButtons(
         Button(
             onClick = onNextClick,
             enabled = canProceed,
-            modifier = Modifier
-                .weight(if (currentStep.isFirstStep()) 1f else 1f)
-                .height(56.dp)
+            modifier =
+                Modifier
+                    .weight(if (currentStep.isFirstStep()) 1f else 1f)
+                    .height(56.dp),
         ) {
             Text(
-                when (currentStep) {
-                    CashLoanApplicationStep.TERMS_REVIEW -> "Review & Accept"
-                    else -> "Next"
-                }
+                text =
+                    when (currentStep) {
+                        CashLoanApplicationStep.TERMS_REVIEW -> "Review & Accept"
+                        else -> "Next"
+                    },
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
     }

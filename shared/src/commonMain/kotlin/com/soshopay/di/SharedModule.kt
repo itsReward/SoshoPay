@@ -49,6 +49,7 @@ import com.soshopay.domain.usecase.loan.SavePayGoLoanDraftUseCase
 import com.soshopay.domain.usecase.loan.SubmitCashLoanApplicationUseCase
 import com.soshopay.domain.usecase.loan.SubmitPayGoApplicationUseCase
 import com.soshopay.domain.usecase.loan.SyncLoansUseCase
+import com.soshopay.domain.usecase.loan.UploadCollateralDocumentUseCase
 import com.soshopay.domain.usecase.loan.ValidateCashLoanApplicationUseCase
 import com.soshopay.domain.usecase.loan.ValidatePayGoApplicationUseCase
 import com.soshopay.domain.usecase.loan.WithdrawLoanApplicationUseCase
@@ -183,6 +184,7 @@ val sharedModule =
         factory { DownloadLoanAgreementUseCase(get()) }
         factory { SyncLoansUseCase(get()) }
         factory { GetCachedLoansUseCase(get()) }
+        factory { UploadCollateralDocumentUseCase(get()) }
 
         // ========== LOAN VALIDATION USE CASES ==========
         factory { ValidateCashLoanApplicationUseCase(get()) }

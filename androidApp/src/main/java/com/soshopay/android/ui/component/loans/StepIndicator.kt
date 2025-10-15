@@ -127,7 +127,7 @@ private fun StepCircle(
                     .clip(CircleShape)
                     .background(
                         when {
-                            isActive -> MaterialTheme.colorScheme.primary
+                            isActive -> MaterialTheme.colorScheme.tertiary
                             isCompleted -> MaterialTheme.colorScheme.primaryContainer
                             else -> MaterialTheme.colorScheme.surfaceVariant
                         },
@@ -150,7 +150,7 @@ private fun StepCircle(
                         fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
                         color =
                             if (isActive) {
-                                MaterialTheme.colorScheme.onPrimary
+                                MaterialTheme.colorScheme.onSurface
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             },
