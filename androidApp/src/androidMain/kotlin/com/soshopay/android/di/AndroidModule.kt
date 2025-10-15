@@ -4,6 +4,10 @@ import com.soshopay.android.ui.viewmodel.AuthViewModel
 import com.soshopay.android.ui.viewmodel.LoanViewModel
 import com.soshopay.android.ui.viewmodel.PaymentViewModel
 import com.soshopay.android.ui.viewmodel.ProfileViewModel
+import com.soshopay.domain.manager.PermissionManager
+import com.soshopay.domain.util.Logger
+import com.soshopay.platform.manager.AndroidPermissionManager
+import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
@@ -15,6 +19,24 @@ import org.koin.dsl.module
  */
 val androidModule =
     module {
+
+        /**
+         * PermissionManager implementation for handling runtime permissions.
+         *
+         * Provides a centralized way to check and request permissions across the app.
+         */
+        single<PermissionManager> {
+            try {
+                Logger.d("Initializing PermissionManager", "DI")
+                AndroidPermissionManager(androidContext()).also {
+                    Logger.i("PermissionManager initialized successfully", "DI")
+                }
+            } catch (e: Exception) {
+                Logger.e("PermissionManager initialization failed", "DI", e)
+                // PermissionManager should always be recoverable
+                AndroidPermissionManager(androidContext())
+            }
+        }
 
         // ========== VIEW MODELS ==========
 
