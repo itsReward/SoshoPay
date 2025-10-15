@@ -333,24 +333,50 @@ class LoanViewModel(
             // Get user profile for pre-population
             val userProfileResult = getUserProfileUseCase()
 
-            // Check for existing draft
-            val draftResult =
-                when (userProfileResult) {
-                    is Result.Success -> getCashLoanDraftUseCase(userProfileResult.data.id)
-                    else -> Result.Success(null)
-                }
-
+            // Handle errors first
             when {
-                formDataResult is Result.Success<CashLoanFormData> && userProfileResult is Result.Success -> {
-                    val formData = formDataResult.data
-                    val user = userProfileResult.data
-                    val draft = (draftResult as? Result.Success<CashLoanApplication?>)?.data
+                formDataResult is com.soshopay.domain.repository.Result.Error -> {
+                    _cashLoanApplicationState.value =
+                        _cashLoanApplicationState.value.copy(
+                            isLoading = false,
+                            errorMessage = getErrorMessage(formDataResult.exception),
+                        )
+                    return@launch
+                }
+                userProfileResult is Result.Error -> {
+                    _cashLoanApplicationState.value =
+                        _cashLoanApplicationState.value.copy(
+                            isLoading = false,
+                            errorMessage = getErrorMessage(userProfileResult.exception),
+                        )
+                    return@launch
+                }
+                formDataResult !is com.soshopay.domain.repository.Result.Success<CashLoanFormData> || userProfileResult !is Result.Success -> {
+                    // Handle Loading or other states
+                    _cashLoanApplicationState.value =
+                        _cashLoanApplicationState.value.copy(
+                            isLoading = false,
+                            errorMessage = "Unable to load application data",
+                        )
+                    return@launch
+                }
+            }
 
+            // At this point, both are Success
+            val formData = formDataResult.data
+            val user = userProfileResult.data
+
+            // Check for existing draft
+            val draftResult = getCashLoanDraftUseCase(user.id)
+
+            when (draftResult) {
+                is com.soshopay.domain.repository.Result.Success -> {
+                    val draft = draftResult.data
                     if (draft != null) {
                         // Load existing draft
                         _cashLoanApplicationState.value =
                             _cashLoanApplicationState.value.copy(
-                                formData = formData as CashLoanFormData?,
+                                formData = formData,
                                 application = draft,
                                 currentStep = draft.currentStep,
                                 loanAmount = draft.loanAmount.toString(),
@@ -366,7 +392,7 @@ class LoanViewModel(
                                 isLoading = false,
                             )
                     } else {
-                        // Pre-populate from user profile
+                        // Pre-populate from user profile (no draft found)
                         _cashLoanApplicationState.value =
                             _cashLoanApplicationState.value.copy(
                                 formData = formData,
@@ -377,18 +403,23 @@ class LoanViewModel(
                             )
                     }
                 }
-                formDataResult is Result.Error -> {
+                is com.soshopay.domain.repository.Result.Error -> {
+                    // Draft loading failed, but continue with empty form
                     _cashLoanApplicationState.value =
                         _cashLoanApplicationState.value.copy(
+                            formData = formData,
+                            application = CashLoanApplication.createDraft(user.id),
+                            monthlyIncome = user.personalDetails?.monthlyIncome?.toString() ?: "",
+                            employerIndustry = user.personalDetails?.occupation ?: "",
                             isLoading = false,
-                            errorMessage = getErrorMessage(formDataResult.exception),
+                            errorMessage = null, // Don't show error for missing draft
                         )
                 }
-                userProfileResult is Result.Error -> {
+                is com.soshopay.domain.repository.Result.Loading -> {
+                    // This should not happen in suspend functions, but handle it
                     _cashLoanApplicationState.value =
                         _cashLoanApplicationState.value.copy(
                             isLoading = false,
-                            errorMessage = getErrorMessage(userProfileResult.exception),
                         )
                 }
             }

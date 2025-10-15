@@ -2,8 +2,8 @@ package com.soshopay.android.ui.component.loans
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
@@ -23,6 +23,9 @@ import com.soshopay.domain.util.EmployerIndustryConstants
  * - "Other" option at the end
  * - Search/filter capability
  * - Material Design 3 styling
+ *
+ * IMPORTANT: Uses Column with verticalScroll instead of LazyColumn
+ * to avoid SubcomposeLayout intrinsic measurement issues.
  *
  * @param selectedIndustry Currently selected industry
  * @param onIndustrySelected Callback when industry is selected
@@ -104,63 +107,66 @@ fun IndustryDropdown(
 
             Divider()
 
-            // Industry list
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
+            // Industry list - Using Column with verticalScroll instead of LazyColumn
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp) // Limit height
+                        .verticalScroll(rememberScrollState()), // Use regular scroll
             ) {
-                items(filteredIndustries) { industry ->
-                    DropdownMenuItem(
-                        text = {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = industry,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight =
-                                        if (industry == selectedIndustry) {
-                                            FontWeight.Bold
-                                        } else {
-                                            FontWeight.Normal
-                                        },
-                                )
-
-                                if (industry == selectedIndustry) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "Selected",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                }
-                            }
-                        },
-                        onClick = {
-                            onIndustrySelected(industry)
-                            expanded = false
-                            searchQuery = ""
-                        },
-                    )
-                }
-
-                // Show message if no results
                 if (filteredIndustries.isEmpty()) {
-                    item {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = "No industries found",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                    // Show message if no results
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "No industries found",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
+                    // Show industries
+                    filteredIndustries.forEach { industry ->
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = industry,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight =
+                                            if (industry == selectedIndustry) {
+                                                FontWeight.Bold
+                                            } else {
+                                                FontWeight.Normal
+                                            },
+                                    )
+
+                                    if (industry == selectedIndustry) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Selected",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    }
+                                }
+                            },
+                            onClick = {
+                                onIndustrySelected(industry)
+                                expanded = false
+                                searchQuery = ""
+                            },
+                        )
                     }
                 }
             }
