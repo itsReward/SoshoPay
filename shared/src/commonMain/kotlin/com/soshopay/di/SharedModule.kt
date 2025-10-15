@@ -31,6 +31,7 @@ import com.soshopay.domain.usecase.loan.CalculateCashLoanTermsUseCase
 import com.soshopay.domain.usecase.loan.CalculatePayGoTermsUseCase
 import com.soshopay.domain.usecase.loan.CheckLoanEligibilityUseCase
 import com.soshopay.domain.usecase.loan.DeleteCashLoanDraftUseCase
+import com.soshopay.domain.usecase.loan.DeletePayGoDraftUseCase
 import com.soshopay.domain.usecase.loan.DeletePayGoLoanDraftUseCase
 import com.soshopay.domain.usecase.loan.DownloadLoanAgreementUseCase
 import com.soshopay.domain.usecase.loan.GetCachedLoansUseCase
@@ -40,11 +41,13 @@ import com.soshopay.domain.usecase.loan.GetCurrentLoansUseCase
 import com.soshopay.domain.usecase.loan.GetLoanDetailsUseCase
 import com.soshopay.domain.usecase.loan.GetLoanHistoryUseCase
 import com.soshopay.domain.usecase.loan.GetPayGoCategoriesUseCase
+import com.soshopay.domain.usecase.loan.GetPayGoDraftUseCase
 import com.soshopay.domain.usecase.loan.GetPayGoLoanDraftUseCase
 import com.soshopay.domain.usecase.loan.GetPayGoProductsUseCase
 import com.soshopay.domain.usecase.loan.ObserveApplicationStatusUseCase
 import com.soshopay.domain.usecase.loan.ObserveLoansUseCase
 import com.soshopay.domain.usecase.loan.SaveCashLoanDraftUseCase
+import com.soshopay.domain.usecase.loan.SavePayGoDraftUseCase
 import com.soshopay.domain.usecase.loan.SavePayGoLoanDraftUseCase
 import com.soshopay.domain.usecase.loan.SubmitCashLoanApplicationUseCase
 import com.soshopay.domain.usecase.loan.SubmitPayGoApplicationUseCase
@@ -173,6 +176,15 @@ val sharedModule =
         factory { SavePayGoLoanDraftUseCase(get()) }
         factory { GetPayGoLoanDraftUseCase(get()) }
         factory { DeletePayGoLoanDraftUseCase(get()) }
+
+        factory { GetPayGoCategoriesUseCase(get()) }
+        factory { GetPayGoProductsUseCase(get()) }
+        // PayGo Validation
+        factory { ValidatePayGoApplicationUseCase(get()) }
+        // PayGo Draft Management
+        factory { SavePayGoDraftUseCase(get()) }
+        factory { GetPayGoDraftUseCase(get()) }
+        factory { DeletePayGoDraftUseCase(get()) }
 
         // ========== GENERAL LOAN USE CASES ==========
         factory { GetLoanHistoryUseCase(get()) }

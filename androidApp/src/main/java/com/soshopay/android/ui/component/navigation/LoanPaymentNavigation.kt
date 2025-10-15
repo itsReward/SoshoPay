@@ -12,6 +12,7 @@ import com.soshopay.android.ui.component.loans.CashLoanApplicationScreen
 import com.soshopay.android.ui.component.loans.LoanDashboardScreen
 import com.soshopay.android.ui.component.loans.LoanDetailsScreen
 import com.soshopay.android.ui.component.loans.LoanHistoryScreen
+import com.soshopay.android.ui.component.loans.PayGoApplicationScreen
 import com.soshopay.android.ui.component.payments.PaymentDashboardScreen
 import com.soshopay.android.ui.component.payments.PaymentHistoryScreen
 import com.soshopay.domain.model.Loan
@@ -190,9 +191,10 @@ fun NavGraphBuilder.payGoApplicationDestination(
     onNavigateBack: () -> Unit,
 ) {
     composable(LoanPaymentRoutes.PayGoApplication.name) {
-        // PayGoApplicationScreen will be implemented
-        // For now, navigate back
-        onNavigateBack()
+        PayGoApplicationScreen(
+            onNavigateToLoanHistory = onNavigateToLoanHistory,
+            onNavigateBack = onNavigateBack,
+        )
     }
 }
 

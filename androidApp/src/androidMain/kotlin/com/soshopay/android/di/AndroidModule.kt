@@ -85,6 +85,8 @@ val androidModule =
                 validateProfileCompletionUseCase = get(),
                 getUserProfileUseCase = get(),
                 uploadCollateralDocumentUseCase = get(),
+                getPayGoDraftUseCase = get(),
+                savePayGoDraftUseCase = get(),
             )
         }
 

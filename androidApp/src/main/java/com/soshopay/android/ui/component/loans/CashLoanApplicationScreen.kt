@@ -11,8 +11,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.soshopay.android.R
 import com.soshopay.android.ui.component.loans.steps.*
 import com.soshopay.android.ui.state.LoanPaymentEvent
 import com.soshopay.android.ui.state.LoanPaymentNavigation
@@ -326,6 +328,7 @@ private fun BottomNavigationButtons(
                 Modifier
                     .weight(if (currentStep.isFirstStep()) 1f else 1f)
                     .height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.yellow)),
         ) {
             Text(
                 text =

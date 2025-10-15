@@ -159,7 +159,7 @@ data class CashLoanApplicationState(
      * Checks if the "Next" button should be enabled
      * @return true if current step is valid and not loading
      */
-    fun canProceedToNext(): Boolean = isCurrentStepValid() && !isLoading && !isSaving && !isCalculating
+    fun canProceedToNext(): Boolean = isCurrentStepValid() && !isLoading && !isCalculating
 
     /**
      * Checks if the "Calculate Terms" button should be enabled

@@ -67,6 +67,7 @@ data class PayGoApplicationState(
     val showConfirmationDialog: Boolean = false,
     val currentStep: PayGoStep = PayGoStep.CATEGORY_SELECTION,
     val isApplicationEnabled: Boolean = false,
+    val acceptedTerms: Boolean = false,
 ) {
     fun hasErrors(): Boolean = errorMessage != null || validationErrors.isNotEmpty()
 
@@ -331,6 +332,73 @@ sealed class LoanPaymentEvent {
     // PayGo Application Events
     object LoadPayGoCategories : LoanPaymentEvent()
 
+    // PayGo Initialization
+    object InitializePayGoApplication : LoanPaymentEvent()
+
+    object LoadPayGoDraft : LoanPaymentEvent()
+
+    object SavePayGoDraft : LoanPaymentEvent()
+
+    // PayGo Step Navigation
+    object NextPayGoStep : LoanPaymentEvent()
+
+    object PreviousPayGoStep : LoanPaymentEvent()
+
+    // Step 1: Category Selection
+    data class UpdatePayGoCategory(
+        val category: String,
+    ) : LoanPaymentEvent()
+
+    // Step 2: Product Selection
+    data class UpdatePayGoProduct(
+        val product: PayGoProduct,
+    ) : LoanPaymentEvent()
+
+    object ShowPayGoProductDetails : LoanPaymentEvent()
+
+    object DismissPayGoProductDetails : LoanPaymentEvent()
+
+    // Step 3: Application Details
+    data class UpdatePayGoUsage(
+        val usage: String,
+    ) : LoanPaymentEvent()
+
+    data class UpdatePayGoRepaymentPeriod(
+        val period: String,
+    ) : LoanPaymentEvent()
+
+    data class UpdatePayGoSalaryBand(
+        val band: String,
+    ) : LoanPaymentEvent()
+
+    // Step 4: Guarantor Information
+    data class UpdatePayGoGuarantor(
+        val guarantor: Guarantor,
+    ) : LoanPaymentEvent()
+
+    // Step 5: Terms Review
+    object CalculatePayGoTerms : LoanPaymentEvent()
+
+    data class UpdatePayGoTermsAcceptance(
+        val accepted: Boolean,
+    ) : LoanPaymentEvent()
+
+    object ShowPayGoTermsDialog : LoanPaymentEvent()
+
+    object DismissPayGoTermsDialog : LoanPaymentEvent()
+
+    // Final Submission
+    object ShowPayGoConfirmationDialog : LoanPaymentEvent()
+
+    object DismissPayGoConfirmationDialog : LoanPaymentEvent()
+
+    object SubmitPayGoApplication : LoanPaymentEvent()
+
+    object ConfirmPayGoSubmission : LoanPaymentEvent()
+
+    // Validation
+    object ClearPayGoValidationErrors : LoanPaymentEvent()
+
     data class SelectCategory(
         val category: String,
     ) : LoanPaymentEvent()
@@ -351,10 +419,6 @@ sealed class LoanPaymentEvent {
         val usage: String,
     ) : LoanPaymentEvent()
 
-    data class UpdatePayGoRepaymentPeriod(
-        val period: String,
-    ) : LoanPaymentEvent()
-
     data class UpdateSalaryBand(
         val band: String,
     ) : LoanPaymentEvent()
@@ -362,18 +426,6 @@ sealed class LoanPaymentEvent {
     data class UpdateGuarantorInfo(
         val guarantor: Guarantor,
     ) : LoanPaymentEvent()
-
-    data class NextPayGoStep(
-        val step: PayGoStep,
-    ) : LoanPaymentEvent()
-
-    data class PreviousPayGoStep(
-        val step: PayGoStep,
-    ) : LoanPaymentEvent()
-
-    object CalculatePayGoTerms : LoanPaymentEvent()
-
-    object SubmitPayGoApplication : LoanPaymentEvent()
 
     // Loan History Events
     object LoadLoanHistory : LoanPaymentEvent()

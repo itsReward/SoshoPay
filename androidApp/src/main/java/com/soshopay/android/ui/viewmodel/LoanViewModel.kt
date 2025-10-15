@@ -10,6 +10,7 @@ import com.soshopay.android.ui.state.LoanPaymentEvent
 import com.soshopay.android.ui.state.LoanPaymentNavigation
 import com.soshopay.android.ui.state.PayGoApplicationState
 import com.soshopay.android.ui.state.PayGoStep
+import com.soshopay.domain.model.Address
 import com.soshopay.domain.model.ApplicationStatus
 import com.soshopay.domain.model.CashLoanApplication
 import com.soshopay.domain.model.CashLoanApplicationStep
@@ -17,11 +18,13 @@ import com.soshopay.domain.model.CashLoanCalculationRequest
 import com.soshopay.domain.model.CashLoanFormData
 import com.soshopay.domain.model.CashLoanTerms
 import com.soshopay.domain.model.Guarantor
+import com.soshopay.domain.model.LoanHistoryFilter
 import com.soshopay.domain.model.LoanStatus
 import com.soshopay.domain.model.LoanType
 import com.soshopay.domain.model.PayGoCalculationRequest
 import com.soshopay.domain.model.PayGoLoanApplication
 import com.soshopay.domain.model.PayGoProduct
+import com.soshopay.domain.model.VerificationStatus
 import com.soshopay.domain.usecase.loan.CalculateCashLoanTermsUseCase
 import com.soshopay.domain.usecase.loan.CalculatePayGoTermsUseCase
 import com.soshopay.domain.usecase.loan.DownloadLoanAgreementUseCase
@@ -31,8 +34,10 @@ import com.soshopay.domain.usecase.loan.GetCurrentLoansUseCase
 import com.soshopay.domain.usecase.loan.GetLoanDetailsUseCase
 import com.soshopay.domain.usecase.loan.GetLoanHistoryUseCase
 import com.soshopay.domain.usecase.loan.GetPayGoCategoriesUseCase
+import com.soshopay.domain.usecase.loan.GetPayGoDraftUseCase
 import com.soshopay.domain.usecase.loan.GetPayGoProductsUseCase
 import com.soshopay.domain.usecase.loan.SaveCashLoanDraftUseCase
+import com.soshopay.domain.usecase.loan.SavePayGoDraftUseCase
 import com.soshopay.domain.usecase.loan.SubmitCashLoanApplicationUseCase
 import com.soshopay.domain.usecase.loan.SubmitPayGoApplicationUseCase
 import com.soshopay.domain.usecase.loan.UploadCollateralDocumentUseCase
@@ -96,6 +101,8 @@ class LoanViewModel(
     private val validateProfileCompletionUseCase: ValidateProfileCompletionUseCase,
     private val getUserProfileUseCase: GetUserProfileUseCase,
     private val uploadCollateralDocumentUseCase: UploadCollateralDocumentUseCase,
+    private val getPayGoDraftUseCase: GetPayGoDraftUseCase,
+    private val savePayGoDraftUseCase: SavePayGoDraftUseCase,
 ) : ViewModel() {
     // ========== STATE MANAGEMENT ==========
 
@@ -141,6 +148,30 @@ class LoanViewModel(
             is LoanPaymentEvent.DismissConfirmationDialog -> dismissConfirmationDialog()
             is LoanPaymentEvent.SubmitCashLoanApplication -> submitCashLoanApplication()
             is LoanPaymentEvent.SaveDraftApplication -> saveDraftApplication()
+            is LoanPaymentEvent.NextStep -> nextStep()
+            is LoanPaymentEvent.PreviousStep -> previousStep()
+            is LoanPaymentEvent.CancelApplication -> cancelApplication()
+
+            // ========== CASH LOAN APPLICATION - NAVIGATION EVENTS ==========
+            is LoanPaymentEvent.InitializeCashLoanApplication -> initializeCashLoanApplication()
+            is LoanPaymentEvent.LoadCashLoanDraft -> loadCashLoanDraft()
+            is LoanPaymentEvent.NavigateToStep -> navigateToStep(event.step)
+
+            // ========== CASH LOAN APPLICATION - STEP 2: INCOME & EMPLOYMENT ==========
+            is LoanPaymentEvent.UpdateEmployerIndustry -> updateEmployerIndustry(event.industry) // ⚠️ ADD THIS LINE
+
+            // ========== CASH LOAN APPLICATION - STEP 3: COLLATERAL INFORMATION ==========
+            is LoanPaymentEvent.UpdateCollateralDetails -> updateCollateralDetails(event.details) // ⚠️ ADD THIS LINE
+            is LoanPaymentEvent.UploadCollateralDocument ->
+                uploadCollateralDocument( // ⚠️ ADD THIS LINE
+                    event.fileBytes,
+                    event.fileName,
+                    event.fileType,
+                )
+            is LoanPaymentEvent.RemoveCollateralDocument -> removeCollateralDocument(event.documentId) // ⚠️ ADD THIS LINE
+
+            // ========== CASH LOAN APPLICATION - STEP 4: TERMS ==========
+            is LoanPaymentEvent.ClearValidationErrors -> clearValidationErrors()
 
             // PayGo Application Events
             is LoanPaymentEvent.LoadPayGoCategories -> loadPayGoCategories()
@@ -1234,10 +1265,6 @@ class LoanViewModel(
         _payGoApplicationState.value = _payGoApplicationState.value.copy(usagePerDay = usage)
     }
 
-    private fun updatePayGoRepaymentPeriod(period: String) {
-        _payGoApplicationState.value = _payGoApplicationState.value.copy(repaymentPeriod = period)
-    }
-
     private fun updateSalaryBand(band: String) {
         _payGoApplicationState.value = _payGoApplicationState.value.copy(salaryBand = band)
     }
@@ -1246,112 +1273,39 @@ class LoanViewModel(
         _payGoApplicationState.value = _payGoApplicationState.value.copy(guarantorInfo = guarantor)
     }
 
-    private fun nextPayGoStep(step: PayGoStep) {
+    private fun nextPayGoStep(step: PayGoStep? = null) {
         val currentState = _payGoApplicationState.value
-        if (currentState.canProceedToNextStep()) {
-            _payGoApplicationState.value = currentState.copy(currentStep = step)
+
+        // If step is provided, use it directly (for compatibility)
+        if (step != null) {
+            _payGoApplicationState.value =
+                currentState.copy(
+                    currentStep = step,
+                    validationErrors = emptyMap(),
+                )
+            savePayGoDraft()
+            return
         }
+
+        // Otherwise, calculate next step based on current step
+        // ... validation and automatic next step logic
     }
 
-    private fun previousPayGoStep(step: PayGoStep) {
-        _payGoApplicationState.value = _payGoApplicationState.value.copy(currentStep = step)
-    }
-
-    private fun calculatePayGoTerms() {
+    private fun previousPayGoStep(step: PayGoStep? = null) {
         val currentState = _payGoApplicationState.value
-        val product = currentState.selectedProduct ?: return
 
-        _payGoApplicationState.value = currentState.copy(isLoading = true, errorMessage = null)
-
-        viewModelScope.launch {
-            val request =
-                PayGoCalculationRequest(
-                    productId = product.id,
-                    usagePerDay = currentState.usagePerDay,
-                    repaymentPeriod = currentState.repaymentPeriod,
-                    salaryBand = currentState.salaryBand,
-                    monthlyIncome = 0.0,
+        // If step is provided, use it directly (for compatibility)
+        if (step != null) {
+            _payGoApplicationState.value =
+                currentState.copy(
+                    currentStep = step,
+                    validationErrors = emptyMap(),
                 )
-
-            val result =
-                calculatePayGoTermsUseCase(
-                    request.productId,
-                    request.repaymentPeriod,
-                    request.usagePerDay,
-                    request.salaryBand,
-                    request.monthlyIncome,
-                )
-
-            when (result) {
-                is com.soshopay.domain.repository.Result.Success -> {
-                    _payGoApplicationState.value =
-                        currentState.copy(
-                            isLoading = false,
-                            calculatedTerms = result.data,
-                            currentStep = PayGoStep.TERMS_REVIEW,
-                            showTermsDialog = true,
-                        )
-                }
-                is com.soshopay.domain.repository.Result.Error -> {
-                    _payGoApplicationState.value =
-                        currentState.copy(
-                            isLoading = false,
-                            errorMessage = getErrorMessage(result.exception),
-                        )
-                }
-                is com.soshopay.domain.repository.Result.Loading -> {
-                    _payGoApplicationState.value = currentState.copy(isLoading = true)
-                }
-            }
+            return
         }
-    }
 
-    private fun submitPayGoApplication() {
-        val currentState = _payGoApplicationState.value
-        val product = currentState.selectedProduct ?: return
-        val terms = currentState.calculatedTerms ?: return
-        val guarantor = currentState.guarantorInfo ?: return
-
-        _payGoApplicationState.value = currentState.copy(isLoading = true, errorMessage = null)
-
-        viewModelScope.launch {
-            val application =
-                PayGoLoanApplication(
-                    id = "",
-                    userId = "",
-                    applicationId = "",
-                    loanType = LoanType.PAYGO,
-                    productId = product.id,
-                    productDetails = product,
-                    usagePerDay = currentState.usagePerDay,
-                    repaymentPeriod = currentState.repaymentPeriod,
-                    salaryBand = currentState.salaryBand,
-                    guarantor = guarantor,
-                    calculatedTerms = terms,
-                    status = ApplicationStatus.SUBMITTED,
-                    submittedAt = System.currentTimeMillis(),
-                    acceptedTerms = true,
-                )
-
-            val result = submitPayGoApplicationUseCase(application)
-
-            when (result) {
-                is com.soshopay.domain.repository.Result.Success -> {
-                    _payGoApplicationState.value = currentState.copy(isLoading = false)
-                    _navigationEvents.emit(LoanPaymentNavigation.ToLoanHistory)
-                }
-                is com.soshopay.domain.repository.Result.Error -> {
-                    _payGoApplicationState.value =
-                        currentState.copy(
-                            isLoading = false,
-                            errorMessage = getErrorMessage(result.exception),
-                        )
-                }
-                is com.soshopay.domain.repository.Result.Loading -> {
-                    _payGoApplicationState.value = currentState.copy(isLoading = true)
-                }
-            }
-        }
+        // Otherwise, calculate previous step
+        // ... automatic previous step logic
     }
 
     // ========== LOAN HISTORY OPERATIONS ==========
@@ -1360,7 +1314,7 @@ class LoanViewModel(
         _loanHistoryState.value = _loanHistoryState.value.copy(isLoading = true, errorMessage = null)
 
         viewModelScope.launch {
-            val result = getLoanHistoryUseCase(com.soshopay.domain.model.LoanHistoryFilter.ALL, 1)
+            val result = getLoanHistoryUseCase(LoanHistoryFilter.ALL, 1)
 
             when (result) {
                 is com.soshopay.domain.repository.Result.Success -> {
@@ -1519,6 +1473,633 @@ class LoanViewModel(
         }
 
     // ========== INITIALIZATION ==========
+
+    /**
+     * PayGo-specific operations for LoanViewModel
+     *
+     * This code should be added to the existing LoanViewModel class.
+     * These methods handle the complete PayGo loan application flow.
+     */
+
+    // ========== PAYGO APPLICATION OPERATIONS ==========
+
+    /**
+     * Initializes the PayGo loan application.
+     * Loads categories, checks for existing draft, and sets initial state.
+     */
+    private fun initializePayGoApplication() {
+        _payGoApplicationState.value =
+            _payGoApplicationState.value.copy(
+                isLoading = true,
+                errorMessage = null,
+            )
+
+        viewModelScope.launch {
+            // Load PayGo categories
+            when (val result = getPayGoCategoriesUseCase()) {
+                is com.soshopay.domain.repository.Result.Success -> {
+                    _payGoApplicationState.value =
+                        _payGoApplicationState.value.copy(
+                            categories = result.data,
+                            isLoading = false,
+                        )
+
+                    // Check for existing draft
+                    loadPayGoDraft()
+                }
+                is com.soshopay.domain.repository.Result.Error -> {
+                    _payGoApplicationState.value =
+                        _payGoApplicationState.value.copy(
+                            isLoading = false,
+                            errorMessage = getErrorMessage(result.exception),
+                        )
+                }
+
+                com.soshopay.domain.repository.Result.Loading -> {
+                    _payGoApplicationState.value = _payGoApplicationState.value.copy(isLoading = true)
+                }
+            }
+        }
+    }
+
+    /**
+     * Loads a draft PayGo application if one exists
+     */
+    private fun loadPayGoDraft() {
+        viewModelScope.launch {
+            // Get current user ID (would come from auth state)
+            val userId = "current_user_id" // TODO: Get from auth
+
+            when (val result = getPayGoDraftUseCase(userId)) {
+                is com.soshopay.domain.repository.Result.Success -> {
+                    result.data?.let { draft ->
+                        // Restore draft to state
+                        _payGoApplicationState.value =
+                            _payGoApplicationState.value.copy(
+                                selectedCategory = draft.productDetails.category,
+                                selectedProduct = draft.productDetails,
+                                usagePerDay = draft.usagePerDay,
+                                repaymentPeriod = draft.repaymentPeriod,
+                                salaryBand = draft.salaryBand,
+                                guarantorInfo = draft.guarantor,
+                                calculatedTerms = draft.calculatedTerms,
+                                acceptedTerms = draft.acceptedTerms,
+                                currentStep = determinePayGoStep(draft),
+                            )
+
+                        // Load products for selected category
+                        if (draft.productDetails.category.isNotEmpty()) {
+                            loadPayGoProducts(draft.productDetails.category)
+                        }
+                    }
+                }
+                is com.soshopay.domain.repository.Result.Error -> {
+                    // Silently fail - no draft is not an error
+                }
+
+                com.soshopay.domain.repository.Result.Loading -> {
+                }
+            }
+        }
+    }
+
+    /**
+     * Saves the current PayGo application as a draft
+     */
+    private fun savePayGoDraft() {
+        val state = _payGoApplicationState.value
+
+        // Only save if we have meaningful data
+        if (state.selectedProduct == null) return
+
+        viewModelScope.launch {
+            val userId = "current_user_id" // TODO: Get from auth
+
+            val draftApplication =
+                PayGoLoanApplication(
+                    id = "",
+                    userId = userId,
+                    applicationId = "",
+                    loanType = LoanType.PAYGO,
+                    productId = state.selectedProduct!!.id,
+                    productDetails = state.selectedProduct!!,
+                    usagePerDay = state.usagePerDay,
+                    repaymentPeriod = state.repaymentPeriod,
+                    salaryBand = state.salaryBand,
+                    guarantor =
+                        state.guarantorInfo ?: Guarantor(
+                            id = "",
+                            applicationId = "",
+                            name = "",
+                            mobileNumber = "",
+                            nationalId = "",
+                            occupationClass = "",
+                            monthlyIncome = 0.0,
+                            relationshipToClient = "",
+                            address =
+                                Address(
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    "",
+                                    0L,
+                                ),
+                            verificationStatus = VerificationStatus.PENDING,
+                            createdAt = System.currentTimeMillis(),
+                        ),
+                    calculatedTerms = state.calculatedTerms,
+                    status = ApplicationStatus.DRAFT,
+                    submittedAt = System.currentTimeMillis(),
+                    reviewStartedAt = null,
+                    reviewCompletedAt = null,
+                    acceptedTerms = state.acceptedTerms,
+                )
+
+            savePayGoDraftUseCase(draftApplication)
+        }
+    }
+
+    /**
+     * Updates the selected PayGo category and loads products
+     */
+    private fun updatePayGoCategory(category: String) {
+        _payGoApplicationState.value =
+            _payGoApplicationState.value.copy(
+                selectedCategory = category,
+                selectedProduct = null, // Reset product when category changes
+                products = emptyList(),
+            )
+
+        loadPayGoProducts(category)
+    }
+
+    /**
+     * Loads products for the selected category
+     */
+    private fun loadPayGoProducts(category: String) {
+        _payGoApplicationState.value =
+            _payGoApplicationState.value.copy(
+                isLoading = true,
+                errorMessage = null,
+            )
+
+        viewModelScope.launch {
+            when (val result = getPayGoProductsUseCase(category)) {
+                is com.soshopay.domain.repository.Result.Success -> {
+                    _payGoApplicationState.value =
+                        _payGoApplicationState.value.copy(
+                            products = result.data,
+                            isLoading = false,
+                        )
+                }
+                is com.soshopay.domain.repository.Result.Error -> {
+                    _payGoApplicationState.value =
+                        _payGoApplicationState.value.copy(
+                            isLoading = false,
+                            errorMessage = getErrorMessage(result.exception),
+                        )
+                }
+
+                com.soshopay.domain.repository.Result.Loading -> {
+                    _payGoApplicationState.value =
+                        _payGoApplicationState.value.copy(
+                            isLoading = true,
+                            errorMessage = null,
+                        )
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates the selected product
+     */
+    private fun updatePayGoProduct(product: PayGoProduct) {
+        _payGoApplicationState.value =
+            _payGoApplicationState.value.copy(
+                selectedProduct = product,
+            )
+    }
+
+    /**
+     * Updates usage per day
+     */
+    private fun updatePayGoUsage(usage: String) {
+        _payGoApplicationState.value =
+            _payGoApplicationState.value.copy(
+                usagePerDay = usage,
+                validationErrors = _payGoApplicationState.value.validationErrors - "usagePerDay",
+            )
+    }
+
+    /**
+     * Updates repayment period
+     */
+    private fun updatePayGoRepaymentPeriod(period: String) {
+        _payGoApplicationState.value =
+            _payGoApplicationState.value.copy(
+                repaymentPeriod = period,
+                validationErrors = _payGoApplicationState.value.validationErrors - "repaymentPeriod",
+            )
+    }
+
+    /**
+     * Updates salary band
+     */
+    private fun updatePayGoSalaryBand(band: String) {
+        _payGoApplicationState.value =
+            _payGoApplicationState.value.copy(
+                salaryBand = band,
+                validationErrors = _payGoApplicationState.value.validationErrors - "salaryBand",
+            )
+    }
+
+    /**
+     * Updates guarantor information
+     */
+    private fun updatePayGoGuarantor(guarantor: Guarantor) {
+        _payGoApplicationState.value =
+            _payGoApplicationState.value.copy(
+                guarantorInfo = guarantor,
+                validationErrors =
+                    _payGoApplicationState.value.validationErrors.filterKeys {
+                        !it.startsWith("guarantor")
+                    },
+            )
+    }
+
+    /**
+     * Updates terms acceptance status
+     */
+    private fun updatePayGoTermsAcceptance(accepted: Boolean) {
+        _payGoApplicationState.value =
+            _payGoApplicationState.value.copy(
+                acceptedTerms = accepted,
+            )
+    }
+
+    /**
+     * Moves to the next step in the PayGo application
+     */
+    private fun nextPayGoStep() {
+        val currentState = _payGoApplicationState.value
+
+        // Validate current step before proceeding
+        val validationErrors = validateCurrentPayGoStep(currentState)
+
+        if (validationErrors.isNotEmpty()) {
+            _payGoApplicationState.value =
+                currentState.copy(
+                    validationErrors = validationErrors,
+                )
+            return
+        }
+
+        val nextStep =
+            when (currentState.currentStep) {
+                PayGoStep.CATEGORY_SELECTION -> PayGoStep.PRODUCT_SELECTION
+                PayGoStep.PRODUCT_SELECTION -> PayGoStep.APPLICATION_DETAILS
+                PayGoStep.APPLICATION_DETAILS -> PayGoStep.GUARANTOR_INFO
+                PayGoStep.GUARANTOR_INFO -> PayGoStep.TERMS_REVIEW
+                PayGoStep.TERMS_REVIEW -> PayGoStep.TERMS_REVIEW // Stay on last step
+            }
+
+        _payGoApplicationState.value =
+            currentState.copy(
+                currentStep = nextStep,
+                validationErrors = emptyMap(),
+            )
+
+        // Auto-save when moving forward
+        savePayGoDraft()
+    }
+
+    /**
+     * Moves to the previous step in the PayGo application
+     */
+    private fun previousPayGoStep() {
+        val currentState = _payGoApplicationState.value
+
+        val previousStep =
+            when (currentState.currentStep) {
+                PayGoStep.CATEGORY_SELECTION -> PayGoStep.CATEGORY_SELECTION // Stay on first step
+                PayGoStep.PRODUCT_SELECTION -> PayGoStep.CATEGORY_SELECTION
+                PayGoStep.APPLICATION_DETAILS -> PayGoStep.PRODUCT_SELECTION
+                PayGoStep.GUARANTOR_INFO -> PayGoStep.APPLICATION_DETAILS
+                PayGoStep.TERMS_REVIEW -> PayGoStep.GUARANTOR_INFO
+            }
+
+        _payGoApplicationState.value =
+            currentState.copy(
+                currentStep = previousStep,
+                validationErrors = emptyMap(),
+            )
+    }
+
+    /**
+     * Calculates loan terms for the PayGo application
+     */
+    private fun calculatePayGoTerms() {
+        val state = _payGoApplicationState.value
+
+        // Validate before calculation
+        val validationErrors = validatePayGoForCalculation(state)
+        if (validationErrors.isNotEmpty()) {
+            _payGoApplicationState.value =
+                state.copy(
+                    validationErrors = validationErrors,
+                )
+            return
+        }
+
+        _payGoApplicationState.value =
+            state.copy(
+                isLoading = true,
+                errorMessage = null,
+            )
+
+        viewModelScope.launch {
+            val product = state.selectedProduct!!
+            val monthlyIncome = extractMonthlyIncomeFromBand(state.salaryBand)
+
+            when (
+                val result =
+                    calculatePayGoTermsUseCase(
+                        productId = product.id,
+                        repaymentPeriod = state.repaymentPeriod,
+                        usagePerDay = state.usagePerDay,
+                        salaryBand = state.salaryBand,
+                        monthlyIncome = monthlyIncome,
+                    )
+            ) {
+                is com.soshopay.domain.repository.Result.Success -> {
+                    _payGoApplicationState.value =
+                        _payGoApplicationState.value.copy(
+                            calculatedTerms = result.data,
+                            isLoading = false,
+                        )
+                }
+                is com.soshopay.domain.repository.Result.Error -> {
+                    _payGoApplicationState.value =
+                        _payGoApplicationState.value.copy(
+                            isLoading = false,
+                            errorMessage = getErrorMessage(result.exception),
+                        )
+                }
+
+                com.soshopay.domain.repository.Result.Loading -> {
+                    _payGoApplicationState.value =
+                        _payGoApplicationState.value.copy(
+                            isLoading = true,
+                            errorMessage = null,
+                        )
+                }
+            }
+        }
+    }
+
+    /**
+     * Shows the confirmation dialog before submission
+     */
+    private fun showPayGoConfirmationDialog() {
+        _payGoApplicationState.value =
+            _payGoApplicationState.value.copy(
+                showConfirmationDialog = true,
+            )
+    }
+
+    /**
+     * Dismisses the confirmation dialog
+     */
+    private fun dismissPayGoConfirmationDialog() {
+        _payGoApplicationState.value =
+            _payGoApplicationState.value.copy(
+                showConfirmationDialog = false,
+            )
+    }
+
+    /**
+     * Initiates PayGo application submission
+     */
+    private fun submitPayGoApplication() {
+        val state = _payGoApplicationState.value
+
+        // Final validation
+        val validationErrors = validateCompletePayGoApplication(state)
+        if (validationErrors.isNotEmpty()) {
+            _payGoApplicationState.value =
+                state.copy(
+                    validationErrors = validationErrors,
+                    errorMessage = "Please complete all required fields",
+                )
+            return
+        }
+
+        // Show confirmation dialog
+        showPayGoConfirmationDialog()
+    }
+
+    /**
+     * Confirms and submits the PayGo application
+     */
+    private fun confirmPayGoSubmission() {
+        val state = _payGoApplicationState.value
+
+        _payGoApplicationState.value =
+            state.copy(
+                isLoading = true,
+                errorMessage = null,
+                showConfirmationDialog = false,
+            )
+
+        viewModelScope.launch {
+            val userId = "current_user_id" // TODO: Get from auth
+
+            val application =
+                PayGoLoanApplication(
+                    id = "",
+                    userId = userId,
+                    applicationId = "",
+                    loanType = LoanType.PAYGO,
+                    productId = state.selectedProduct!!.id,
+                    productDetails = state.selectedProduct!!,
+                    usagePerDay = state.usagePerDay,
+                    repaymentPeriod = state.repaymentPeriod,
+                    salaryBand = state.salaryBand,
+                    guarantor = state.guarantorInfo!!,
+                    calculatedTerms = state.calculatedTerms,
+                    status = ApplicationStatus.SUBMITTED,
+                    submittedAt = System.currentTimeMillis(),
+                    reviewStartedAt = null,
+                    reviewCompletedAt = null,
+                    acceptedTerms = state.acceptedTerms,
+                )
+
+            when (val result = submitPayGoApplicationUseCase(application)) {
+                is com.soshopay.domain.repository.Result.Success -> {
+                    // Clear draft after successful submission
+                    deleteDraftPayGoApplication(userId)
+
+                    // Navigate to loan history
+                    _navigationEvents.emit(LoanPaymentNavigation.ToLoanHistory)
+                }
+                is com.soshopay.domain.repository.Result.Error -> {
+                    _payGoApplicationState.value =
+                        _payGoApplicationState.value.copy(
+                            isLoading = false,
+                            errorMessage = getErrorMessage(result.exception),
+                        )
+                }
+
+                com.soshopay.domain.repository.Result.Loading -> {
+                    _payGoApplicationState.value =
+                        _payGoApplicationState.value.copy(
+                            isLoading = true,
+                            errorMessage = null,
+                        )
+                }
+            }
+        }
+    }
+
+// ========== VALIDATION HELPERS ==========
+
+    /**
+     * Validates the current step of PayGo application
+     */
+    private fun validateCurrentPayGoStep(state: PayGoApplicationState): Map<String, String> {
+        val errors = mutableMapOf<String, String>()
+
+        when (state.currentStep) {
+            PayGoStep.CATEGORY_SELECTION -> {
+                if (state.selectedCategory.isEmpty()) {
+                    errors["category"] = "Please select a category"
+                }
+            }
+            PayGoStep.PRODUCT_SELECTION -> {
+                if (state.selectedProduct == null) {
+                    errors["product"] = "Please select a product"
+                }
+            }
+            PayGoStep.APPLICATION_DETAILS -> {
+                if (state.usagePerDay.isEmpty()) {
+                    errors["usagePerDay"] = "Usage per day is required"
+                }
+                if (state.repaymentPeriod.isEmpty()) {
+                    errors["repaymentPeriod"] = "Repayment period is required"
+                }
+                if (state.salaryBand.isEmpty()) {
+                    errors["salaryBand"] = "Salary band is required"
+                }
+            }
+            PayGoStep.GUARANTOR_INFO -> {
+                val guarantor = state.guarantorInfo
+                if (guarantor == null || !guarantor.isComplete()) {
+                    if (guarantor?.name.isNullOrEmpty()) {
+                        errors["guarantorName"] = "Guarantor name is required"
+                    }
+                    if (guarantor?.mobileNumber.isNullOrEmpty()) {
+                        errors["guarantorMobile"] = "Guarantor mobile number is required"
+                    }
+                    if (guarantor?.nationalId.isNullOrEmpty()) {
+                        errors["guarantorNationalId"] = "Guarantor national ID is required"
+                    }
+                    if (guarantor?.occupationClass.isNullOrEmpty()) {
+                        errors["guarantorOccupation"] = "Guarantor occupation is required"
+                    }
+                    if (guarantor?.relationshipToClient.isNullOrEmpty()) {
+                        errors["guarantorRelationship"] = "Relationship is required"
+                    }
+                }
+            }
+            PayGoStep.TERMS_REVIEW -> {
+                if (state.calculatedTerms == null) {
+                    errors["terms"] = "Please calculate terms before proceeding"
+                }
+                if (!state.acceptedTerms) {
+                    errors["acceptedTerms"] = "You must accept the terms to proceed"
+                }
+            }
+        }
+
+        return errors
+    }
+
+    /**
+     * Validates PayGo application data before calculating terms
+     */
+    private fun validatePayGoForCalculation(state: PayGoApplicationState): Map<String, String> {
+        val errors = mutableMapOf<String, String>()
+
+        if (state.selectedProduct == null) {
+            errors["product"] = "Product selection is required"
+        }
+        if (state.usagePerDay.isEmpty()) {
+            errors["usagePerDay"] = "Usage per day is required"
+        }
+        if (state.repaymentPeriod.isEmpty()) {
+            errors["repaymentPeriod"] = "Repayment period is required"
+        }
+        if (state.salaryBand.isEmpty()) {
+            errors["salaryBand"] = "Salary band is required"
+        }
+
+        return errors
+    }
+
+    /**
+     * Validates complete PayGo application before submission
+     */
+    private fun validateCompletePayGoApplication(state: PayGoApplicationState): Map<String, String> {
+        val errors = mutableMapOf<String, String>()
+
+        // Validate all steps
+        errors.putAll(validateCurrentPayGoStep(state.copy(currentStep = PayGoStep.CATEGORY_SELECTION)))
+        errors.putAll(validateCurrentPayGoStep(state.copy(currentStep = PayGoStep.PRODUCT_SELECTION)))
+        errors.putAll(validateCurrentPayGoStep(state.copy(currentStep = PayGoStep.APPLICATION_DETAILS)))
+        errors.putAll(validateCurrentPayGoStep(state.copy(currentStep = PayGoStep.GUARANTOR_INFO)))
+        errors.putAll(validateCurrentPayGoStep(state.copy(currentStep = PayGoStep.TERMS_REVIEW)))
+
+        return errors
+    }
+
+    /**
+     * Determines the appropriate PayGo step based on draft application
+     */
+    private fun determinePayGoStep(draft: PayGoLoanApplication): PayGoStep =
+        when {
+            draft.calculatedTerms != null -> PayGoStep.TERMS_REVIEW
+            draft.guarantor.isComplete() -> PayGoStep.TERMS_REVIEW
+            draft.usagePerDay.isNotEmpty() &&
+                draft.repaymentPeriod.isNotEmpty() &&
+                draft.salaryBand.isNotEmpty() -> PayGoStep.GUARANTOR_INFO
+            draft.productDetails.id.isNotEmpty() -> PayGoStep.APPLICATION_DETAILS
+            draft.productDetails.category.isNotEmpty() -> PayGoStep.PRODUCT_SELECTION
+            else -> PayGoStep.CATEGORY_SELECTION
+        }
+
+    /**
+     * Extracts estimated monthly income from salary band string
+     */
+    private fun extractMonthlyIncomeFromBand(salaryBand: String): Double =
+        when {
+            salaryBand.contains("Below") -> 250.0
+            salaryBand.contains("300") && salaryBand.contains("500") -> 400.0
+            salaryBand.contains("500") && salaryBand.contains("1,000") -> 750.0
+            salaryBand.contains("1,000") && salaryBand.contains("2,000") -> 1500.0
+            salaryBand.contains("Above") && salaryBand.contains("2,000") -> 2500.0
+            else -> 500.0 // Default
+        }
+
+    /**
+     * Deletes draft PayGo application
+     */
+    private suspend fun deleteDraftPayGoApplication(userId: String) {
+        // This would call the delete draft use case
+        // For now, just a placeholder
+    }
 
     init {
         loadLoanDashboard()
