@@ -1,5 +1,6 @@
 package com.soshopay.android.ui.component.loans
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -162,8 +163,9 @@ fun PayGoApplicationScreen(
             Column(
                 modifier =
                     Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                        .fillMaxHeight()
+                        .padding(paddingValues)
+                        .background(MaterialTheme.colorScheme.secondary),
             ) {
                 // Step Indicator
                 StepIndicator(

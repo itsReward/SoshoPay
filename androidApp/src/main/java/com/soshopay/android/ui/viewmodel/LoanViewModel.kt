@@ -174,10 +174,15 @@ class LoanViewModel(
             is LoanPaymentEvent.ClearValidationErrors -> clearValidationErrors()
 
             // PayGo Application Events
+            is LoanPaymentEvent.InitializePayGoApplication -> initializePayGoApplication()
+            is LoanPaymentEvent.LoadPayGoDraft -> loadPayGoDraft()
+            is LoanPaymentEvent.SavePayGoDraft -> savePayGoDraft()
             is LoanPaymentEvent.LoadPayGoCategories -> loadPayGoCategories()
             is LoanPaymentEvent.SelectCategory -> selectCategory(event.category)
+            is LoanPaymentEvent.UpdatePayGoCategory -> updatePayGoCategory(event.category)
             is LoanPaymentEvent.LoadCategoryProducts -> loadCategoryProducts(event.categoryId)
             is LoanPaymentEvent.SelectProduct -> selectProduct(event.product)
+            is LoanPaymentEvent.UpdatePayGoProduct -> updatePayGoProduct(event.product)
             is LoanPaymentEvent.ShowProductDetails -> showProductDetails()
             is LoanPaymentEvent.DismissProductDetails -> dismissProductDetails()
             is LoanPaymentEvent.UpdateUsagePerDay -> updateUsagePerDay(event.usage)

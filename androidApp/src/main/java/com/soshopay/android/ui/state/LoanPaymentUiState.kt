@@ -320,6 +320,7 @@ sealed class LoanPaymentEvent {
     object SaveDraftApplication : LoanPaymentEvent()
 
     // PayGo Application Events
+
     object LoadPayGoCategories : LoanPaymentEvent()
 
     // PayGo Initialization
