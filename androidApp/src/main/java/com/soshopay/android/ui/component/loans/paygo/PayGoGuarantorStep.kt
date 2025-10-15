@@ -58,6 +58,7 @@ fun PayGoGuarantorStep(
     var suburb by remember { mutableStateOf(guarantor?.address?.suburb ?: "") }
     var city by remember { mutableStateOf(guarantor?.address?.city ?: "") }
     var province by remember { mutableStateOf(guarantor?.address?.province ?: "") }
+    var residenceType by remember { mutableStateOf(guarantor?.address?.residenceType?.ifBlank { "Residential" } ?: "Residential") }
 
     // Update guarantor when fields change
     LaunchedEffect(
@@ -71,6 +72,7 @@ fun PayGoGuarantorStep(
         suburb,
         city,
         province,
+        residenceType,
     ) {
         if (name.isNotEmpty() || mobileNumber.isNotEmpty() || nationalId.isNotEmpty()) {
             val address =
@@ -80,7 +82,7 @@ fun PayGoGuarantorStep(
                     city = city,
                     province = province,
                     postalCode = "",
-                    residenceType = "Residential",
+                    residenceType = residenceType,
                     lastUpdated = Clock.System.now().toEpochMilliseconds(),
                 )
 
