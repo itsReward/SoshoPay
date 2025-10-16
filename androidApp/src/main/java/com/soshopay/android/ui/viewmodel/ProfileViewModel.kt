@@ -218,10 +218,16 @@ class ProfileViewModel(
         }
     }
 
+    /**
+     * In ProfileViewModel.kt, find and replace the initializeEditStates method
+     * with this updated version that properly handles null values
+     */
+
     private fun initializeEditStates(user: com.soshopay.domain.model.User) {
-        // Initialize personal details
-        user.personalDetails?.let { details ->
-            _personalDetailsEditState.value =
+        // Initialize personal details - use empty strings if null
+        _personalDetailsEditState.value =
+            if (user.personalDetails != null) {
+                val details = user.personalDetails!!
                 PersonalDetailsEditState(
                     firstName = details.firstName,
                     lastName = details.lastName,
@@ -231,11 +237,23 @@ class ProfileViewModel(
                     occupation = details.occupation,
                     monthlyIncome = details.monthlyIncome.toString(),
                 )
-        }
+            } else {
+                // Empty state for new users who haven't filled personal details yet
+                PersonalDetailsEditState(
+                    firstName = "",
+                    lastName = "",
+                    dateOfBirth = "",
+                    gender = "",
+                    nationality = "",
+                    occupation = "",
+                    monthlyIncome = "",
+                )
+            }
 
-        // Initialize address
-        user.address?.let { address ->
-            _addressEditState.value =
+        // Initialize address - use empty strings if null
+        _addressEditState.value =
+            if (user.address != null) {
+                val address = user.address!!
                 AddressEditState(
                     streetAddress = address.streetAddress,
                     suburb = address.suburb,
@@ -244,43 +262,72 @@ class ProfileViewModel(
                     postalCode = address.postalCode,
                     residenceType = address.residenceType,
                 )
-        }
+            } else {
+                // Empty state for new users who haven't filled address yet
+                AddressEditState(
+                    streetAddress = "",
+                    suburb = "",
+                    city = "",
+                    province = "",
+                    postalCode = "",
+                    residenceType = "",
+                )
+            }
 
-        // Initialize next of kin
-        user.nextOfKin?.let { kin ->
-            _nextOfKinEditState.value =
+        // Initialize next of kin - use empty strings if null
+        _nextOfKinEditState.value =
+            if (user.nextOfKin != null) {
+                val kin = user.nextOfKin
                 NextOfKinEditState(
-                    fullName = kin.fullName,
-                    relationship = kin.relationship,
-                    phoneNumber = kin.phoneNumber,
+                    fullName = kin?.fullName ?: "",
+                    relationship = kin?.relationship ?: "",
+                    phoneNumber = kin?.phoneNumber ?: "",
                     address =
                         AddressEditState(
-                            streetAddress = kin.address.streetAddress,
-                            suburb = kin.address.suburb,
-                            city = kin.address.city,
-                            province = kin.address.province,
-                            postalCode = kin.address.postalCode,
-                            residenceType = kin.address.residenceType,
+                            streetAddress = kin?.address?.streetAddress ?: "",
+                            suburb = kin?.address?.suburb ?: "",
+                            city = kin?.address?.city ?: "",
+                            province = kin?.address?.province ?: "",
+                            postalCode = kin?.address?.postalCode ?: "",
+                            residenceType = kin?.address?.residenceType ?: "",
                         ),
                 )
-        }
-
-        // Initialize documents
-        user.documents?.let { docs ->
-            _documentUploadState.value =
-                DocumentUploadState(
-                    nationalId = docs.nationalId,
-                    proofOfResidence = docs.proofOfResidence,
+            } else {
+                // Empty state for new users who haven't added next of kin yet
+                NextOfKinEditState(
+                    fullName = "",
+                    relationship = "",
+                    phoneNumber = "",
+                    address =
+                        AddressEditState(
+                            streetAddress = "",
+                            suburb = "",
+                            city = "",
+                            province = "",
+                            postalCode = "",
+                            residenceType = "",
+                        ),
                 )
-        }
+            }
 
-        // Initialize profile picture
-        user.profilePicture?.let { pic ->
-            _profilePictureState.value =
-                ProfilePictureState(
-                    imageUrl = pic.url,
-                )
-        }
+        // Initialize documents - these can be null until uploaded
+        _documentUploadState.value =
+            DocumentUploadState(
+                nationalId = user.documents?.nationalId,
+                proofOfResidence = user.documents?.proofOfResidence,
+                isUploadingNationalId = false,
+                isUploadingProofOfResidence = false,
+                errorMessage = null,
+            )
+
+        // Initialize profile picture - can be null until uploaded
+        _profilePictureState.value =
+            ProfilePictureState(
+                imageUrl = user.profilePicture?.url,
+                isUploading = false,
+                uploadProgress = 0f,
+                errorMessage = null,
+            )
     }
 
     private fun toggleEditMode() {
